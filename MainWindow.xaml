@@ -5,8 +5,11 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:StockAnalysis"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
-        
-    </Grid>
+        Title="MainWindow" Height="600" Width="800">
+    <StackPanel Orientation="Vertical">
+        <TextBlock x:Name="tbStockPrice" Text="No stock price yet!!!" Width="Auto" Height="Auto" FontSize="40"/>
+        <Canvas x:Name="cvsMain" Height="500">
+
+        </Canvas>
+    </StackPanel>
 </Window>
