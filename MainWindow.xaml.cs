@@ -23,13 +23,19 @@ namespace StockAnalysis
 	/// </summary>
 	public partial class MainWindow : Window
 	{
+		static double chartHeightPixels = 500; // TODO: Let's not hard-code this.
+		static double chartWidthPixels = 1900; // TODO: Let's not hard-code this.
+
+		ChartTranslator chartTranslator = new ChartTranslator(chartWidthPixels, chartHeightPixels);
 		// tbStockPrice
-		const int INT_DotDiameter = 10;
+
+
+		const double INT_DotDiameter = 10;
+		const double INT_DotRadius = INT_DotDiameter / 2;
 		BittrexClient bittrexClient = new BittrexClient();
 		BittrexSocketClient bittrexSocketClient = new BittrexSocketClient();
 		WebCallResult<BittrexTick> bitcoinTicker;
-		List<StockDataPoint> stockDataPoints = new List<StockDataPoint>();
-		double leftPos = 0;
+		//double leftPos = 0;
 
 		public MainWindow()
 		{
@@ -43,58 +49,74 @@ namespace StockAnalysis
 			});
 		}
 
-		decimal high = 37000;
-		decimal low = 35000;
-		double chartHeightPixels = 500;
-
-		void CalculateHighAndLow()
-		{
-			high = 0;
-			low = decimal.MaxValue;
-			foreach (StockDataPoint stockDataPoint in stockDataPoints)
-			{
-				if (stockDataPoint.Tick.LastTradeRate < low)
-					low = stockDataPoint.Tick.LastTradeRate;
-				if (stockDataPoint.Tick.LastTradeRate > high)
-					high = stockDataPoint.Tick.LastTradeRate;
-			}
-		}
 		void UpdateLastPrice(BittrexTick data)
 		{
-			// TODO: Connect the Ellipse with the StockDataPoint using a Dictionary, and update its position each time we get new data.
-			StockDataPoint stockDataPoint = new StockDataPoint(data);
-			stockDataPoints.Add(stockDataPoint);
-			CalculateHighAndLow();
-			if (high == low)
-			{
-				high += 1;
-				low -= 1;
-				if (low < 0)
-					low = 0;
-			}
+			chartTranslator.AddStockPosition(data);
 
-			// Make sure the text is changed on the UI thread!
 			Dispatcher.Invoke(() =>
 			{
-				leftPos += INT_DotDiameter;
-				Ellipse dot = new Ellipse() { Fill = new SolidColorBrush(Colors.Red), Width = INT_DotDiameter, Height = INT_DotDiameter };
-				Canvas.SetLeft(dot, leftPos);
-				decimal amountAboveBottom = data.LastTradeRate - low;
-				decimal chartHeightDollars = high - low;
-
-				/* amountAboveTheLow = $1 
-					 chartHeightDollars = $2
-					 percentOfChartHeight = 0.5 == 50%
-					 chartHeightPixels = 500px
-				 */
-				decimal percentOfChartHeightFromBottom = amountAboveBottom / chartHeightDollars;
-				double distanceFromBottomPixels = (double)percentOfChartHeightFromBottom * chartHeightPixels;
-				double distanceFromTopPixels = chartHeightPixels - distanceFromBottomPixels;
-				Canvas.SetTop(dot, distanceFromTopPixels);
-				cvsMain.Children.Add(dot);
-
+				DrawGraph();
 				tbStockPrice.Text = $"{data.Symbol}: ${data.LastTradeRate}";
 			});
+		}
+
+		private void DrawGraph()
+		{
+			double lastX = double.MinValue;
+			double lastY = double.MinValue;
+
+			bool alreadyDrawnAtLeastOnePoint = false;
+
+			cvsMain.Children.Clear();
+
+			foreach (StockDataPoint stockDataPoint in chartTranslator.StockDataPoints)
+			{
+				double x = chartTranslator.GetStockPositionX(stockDataPoint.Time);
+				double y = chartTranslator.GetStockPositionY(stockDataPoint.Tick.LastTradeRate);
+				AddDot(x, y);
+
+				if (alreadyDrawnAtLeastOnePoint)
+				{
+					AddLine(lastX, lastY, y, x);
+				}
+
+				alreadyDrawnAtLeastOnePoint = true;
+
+				lastX = x;
+				lastY = y;
+			}
+		}
+
+		private void AddDot(double x, double y)
+		{
+			Ellipse dot = new Ellipse() { Fill = new SolidColorBrush(Colors.Red), Width = INT_DotDiameter, Height = INT_DotDiameter };
+			Canvas.SetLeft(dot, x - INT_DotRadius);
+			Canvas.SetTop(dot, y - INT_DotRadius);
+			cvsMain.Children.Add(dot);
+		}
+
+		private void AddLine(double lastX, double lastY, double y, double x)
+		{
+			Line line = new Line();
+			line.X1 = lastX;
+			line.Y1 = lastY;
+			line.X2 = x;
+			line.Y2 = y;
+			line.Stroke = new SolidColorBrush(Colors.Blue);
+			line.StrokeThickness = 3;
+			cvsMain.Children.Insert(0, line);  // All lines go to the back.
+		}
+
+		private void cvsMain_MouseMove(object sender, MouseEventArgs e)
+		{
+			// TODO: Make sure this works. Draw a line behind mouse.
+			Point position = e.GetPosition(cvsMain);
+			DateTime mouseTime = chartTranslator.GetTimeFromX(position.X);
+			StockDataPoint nearestPoint = chartTranslator.GetNearestPoint(mouseTime);
+			if (nearestPoint != null)
+				Title = $"{nearestPoint.Tick.LastTradeRate}";
+			else
+				Title = "Move mouse near point to see value!";
 		}
 	}
 }

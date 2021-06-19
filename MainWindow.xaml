@@ -8,7 +8,7 @@
         Title="MainWindow" Height="600" Width="800">
     <StackPanel Orientation="Vertical">
         <TextBlock x:Name="tbStockPrice" Text="No stock price yet!!!" Width="Auto" Height="Auto" FontSize="40"/>
-        <Canvas x:Name="cvsMain" Height="500">
+        <Canvas x:Name="cvsMain" Height="500" Width="1900" MouseMove="cvsMain_MouseMove">
 
         </Canvas>
     </StackPanel>
