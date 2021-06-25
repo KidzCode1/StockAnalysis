@@ -8,6 +8,7 @@ namespace StockAnalysis
 {
 	public class ChartTranslator
 	{
+		internal object stockDataPointsLock = new object();
 		List<StockDataPoint> stockDataPoints = new List<StockDataPoint>();
 
 		public ChartTranslator(double chartWidthPixels, double chartHeightPixels)
@@ -18,8 +19,8 @@ namespace StockAnalysis
 
 		decimal high = 37000;
 		decimal low = 35000;
-		readonly double chartHeightPixels;
-		readonly double chartWidthPixels;
+		public readonly double chartHeightPixels;
+		public readonly double chartWidthPixels;
 		DateTime start;
 		DateTime end;
 
@@ -29,13 +30,14 @@ namespace StockAnalysis
 		{
 			high = 0;
 			low = decimal.MaxValue;
-			foreach (StockDataPoint stockDataPoint in stockDataPoints)
-			{
-				if (stockDataPoint.Tick.LastTradeRate < low)
-					low = stockDataPoint.Tick.LastTradeRate;
-				if (stockDataPoint.Tick.LastTradeRate > high)
-					high = stockDataPoint.Tick.LastTradeRate;
-			}
+			lock (stockDataPointsLock)
+				foreach (StockDataPoint stockDataPoint in stockDataPoints)
+				{
+					if (stockDataPoint.Tick.LastTradeRate < low)
+						low = stockDataPoint.Tick.LastTradeRate;
+					if (stockDataPoint.Tick.LastTradeRate > high)
+						high = stockDataPoint.Tick.LastTradeRate;
+				}
 
 			if (high == low)  // Only one data point?
 			{
@@ -46,15 +48,18 @@ namespace StockAnalysis
 					low = 0;
 			}
 
-			if (stockDataPoints.Count == 0)
+			lock (stockDataPointsLock)
 			{
-				start = DateTime.Now;
-				end = DateTime.Now;
-				return;
-			}
+				if (stockDataPoints.Count == 0)
+				{
+					start = DateTime.Now;
+					end = DateTime.Now;
+					return;
+				}
 
-			start = stockDataPoints[0].Time;
-			end = stockDataPoints[stockDataPoints.Count - 1].Time;
+				start = stockDataPoints[0].Time;
+				end = stockDataPoints[stockDataPoints.Count - 1].Time;
+			}
 		}
 
 		public double GetStockPositionX(DateTime time)
@@ -66,6 +71,16 @@ namespace StockAnalysis
 			double percentAcross = secondsToPoint / totalSecondsAcross;
 
 			return percentAcross * chartWidthPixels;
+		}
+
+		public DateTime GetTime(double x)
+		{
+			TimeSpan totalSpanAcross = end - start;
+			double totalSecondsAcross = totalSpanAcross.TotalSeconds;
+			double percentAcross = x / chartWidthPixels;
+			double secondsToPoint = percentAcross * totalSecondsAcross;
+
+			return start + TimeSpan.FromSeconds(secondsToPoint);
 		}
 
 		public DateTime GetTimeFromX(double xPos)
@@ -93,26 +108,41 @@ namespace StockAnalysis
 		public StockDataPoint AddStockPosition(BittrexTick data)
 		{
 			StockDataPoint stockDataPoint = new StockDataPoint(data);
+			if (stockDataPoints.Count >= 2)
+			{
+				int lastIndex = stockDataPoints.Count - 1;
+				StockDataPoint lastPoint = stockDataPoints[lastIndex];
+				StockDataPoint secondToLastPoint = stockDataPoints[lastIndex - 1];
+				if (lastPoint.Tick.LastTradeRate == secondToLastPoint.Tick.LastTradeRate)
+				{
+					if (lastPoint.Tick.LastTradeRate == data.LastTradeRate)
+					{
+						// Last two points, plus this one are the same. We can remove the middle point.
+						lock (stockDataPointsLock)
+							stockDataPoints.RemoveAt(lastIndex);
+					}
+				}
+			}
 			stockDataPoints.Add(stockDataPoint);
 			CalculateBounds();
 			return stockDataPoint;
 		}
 
-		public StockDataPoint GetNearestPoint(DateTime time)
+		public StockDataPoint GetNearestPointInTime(DateTime time)
 		{
 			double closestSpanSoFar = double.MaxValue;
 			StockDataPoint closestDataPoint = null;
-			foreach (StockDataPoint stockDataPoint in StockDataPoints)
-			{
-				double distanceInTime = Math.Abs((stockDataPoint.Time - time).TotalSeconds);
-				if (distanceInTime < closestSpanSoFar)
+			lock (stockDataPointsLock)
+				foreach (StockDataPoint stockDataPoint in StockDataPoints)
 				{
-					closestSpanSoFar = distanceInTime;
-					closestDataPoint = stockDataPoint;
+					double distanceInTime = Math.Abs((stockDataPoint.Time - time).TotalSeconds);
+					if (distanceInTime < closestSpanSoFar)
+					{
+						closestSpanSoFar = distanceInTime;
+						closestDataPoint = stockDataPoint;
+					}
 				}
-			}
 			return closestDataPoint;
 		}
-
 	}
 }
