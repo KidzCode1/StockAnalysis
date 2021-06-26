@@ -8,6 +8,7 @@ namespace StockAnalysis
 	{
 		public BittrexTick Tick { get; set; }
 		public DateTime Time { get; set; }
+		public int Weight { get; set; } = 1;
 		public StockDataPoint(BittrexTick tick)
 		{
 			Tick = tick;

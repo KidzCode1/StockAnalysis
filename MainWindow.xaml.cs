@@ -91,6 +91,7 @@ namespace StockAnalysis
 				}
 
 			AddAdornments(lastMousePosition);
+			chartTranslator.AddMovingAverage(5, cvsAnalysis, new SolidColorBrush(Color.FromArgb(127, 0, 255, 47)));
 		}
 
 		private void AddDot(double lastY, double x, double y, StockDataPoint stockDataPoint)
@@ -221,6 +222,53 @@ namespace StockAnalysis
 			AddAdornments(lastMousePosition);
 		}
 
+		private static string GetNum(decimal value, int numDigits = 29)
+		{
+			string sep = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
+			string strDec = value.ToString("#,0." + new string('#', numDigits), CultureInfo.CurrentCulture);
+			return strDec.Contains(sep) ? strDec.TrimEnd('0').TrimEnd(sep.ToCharArray()) : strDec;
+		}
+
+		void ShowHintData(double x, double y, StockDataPoint nearestPoint)
+		{
+			string symbol = nearestPoint.Tick.Symbol;
+			string currency = string.Empty;
+			int dashIndex = symbol.IndexOf("-");
+			if (dashIndex >= 0)
+				currency = symbol.Substring(dashIndex + 1);
+			tbTradePrice.Text = $"{GetNum(nearestPoint.Tick.LastTradeRate)} {currency}";
+			tbHighestBid.Text = $"{GetNum(nearestPoint.Tick.BidRate)} {currency}";
+			tbLowestAsk.Text = $"{GetNum(nearestPoint.Tick.AskRate)} {currency}";
+			tbTime.Text = $"{nearestPoint.Time}";
+			grdStockTickDetails.Visibility = Visibility.Visible;
+			double yPos = y - 34;
+			
+			if (OnLeftSide(x))
+			{
+				stockHintPointingRight.Visibility = Visibility.Hidden;
+				stockHintPointingLeft.Visibility = Visibility.Visible;
+				Canvas.SetLeft(stockHintPointingLeft, x);
+				Canvas.SetTop(stockHintPointingLeft, yPos);
+				Canvas.SetLeft(grdStockTickDetails, x + 50);
+				Canvas.SetTop(grdStockTickDetails, yPos + 8);
+			}
+			else
+			{
+				stockHintPointingRight.Visibility = Visibility.Visible;
+				stockHintPointingLeft.Visibility = Visibility.Hidden;
+				double xPos = x - stockHintPointingRight.ActualWidth;
+				Canvas.SetLeft(stockHintPointingRight, xPos);
+				Canvas.SetTop(stockHintPointingRight, yPos);
+				Canvas.SetLeft(grdStockTickDetails, xPos + 13);
+				Canvas.SetTop(grdStockTickDetails, yPos + 8);
+			}
+		}
+
+		private bool OnLeftSide(double x)
+		{
+			return x < chartTranslator.chartWidthPixels / 2;
+		}
+
 		private void AddAdornments(Point position)
 		{
 			cvsAdornments.Children.Clear();
@@ -237,7 +285,10 @@ namespace StockAnalysis
 
 				StockDataPoint nearestPoint = closestEllipse.Tag as StockDataPoint;
 				if (nearestPoint != null)
+				{
 					Title = $"{nearestPoint.Tick.LastTradeRate}";
+					ShowHintData(x, y, nearestPoint);
+				}
 				else
 					Title = "Move mouse near point to see value!";
 			}

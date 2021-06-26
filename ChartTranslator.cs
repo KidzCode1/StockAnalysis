@@ -3,6 +3,9 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Windows.Shapes;
 
 namespace StockAnalysis
 {
@@ -119,13 +122,72 @@ namespace StockAnalysis
 					{
 						// Last two points, plus this one are the same. We can remove the middle point.
 						lock (stockDataPointsLock)
+						{
+							// Since we are removing data points for efficiency, we have to weigh down the new point we are adding so our SMA still works. 
+							stockDataPoint.Weight += lastPoint.Weight;
 							stockDataPoints.RemoveAt(lastIndex);
+						}
 					}
 				}
 			}
 			stockDataPoints.Add(stockDataPoint);
 			CalculateBounds();
 			return stockDataPoint;
+		}
+
+		public void AddMovingAverage(double spanDurationSeconds, Canvas canvas, Brush lineColor)
+		{
+			canvas.Children.Clear();
+			TimeSpan timeSpan = TimeSpan.FromSeconds(spanDurationSeconds);
+			TimeSpan halfTimeSpan = TimeSpan.FromSeconds(spanDurationSeconds / 2.0);
+			DateTime spanStartTime = start;
+			DateTime endTime = spanStartTime + timeSpan;
+
+			List<StockDataPoint> pointsInSpan = new List<StockDataPoint>();
+			double lastAverageX = 0;
+			double lastAverageY = double.MinValue;
+
+			lock (stockDataPointsLock)
+				foreach (StockDataPoint stockDataPoint in StockDataPoints)
+				{
+					if (stockDataPoint.Time > endTime && pointsInSpan.Count > 0)
+					{
+						// We are outside of the span we are interested in.
+						// That means we need to calculate the moving average for the points we have collected.
+						decimal totalPrice = 0;
+						int totalWeight = 0;
+						foreach (StockDataPoint dataPoint in pointsInSpan)
+						{
+							totalWeight += dataPoint.Weight;
+							totalPrice += dataPoint.Tick.LastTradeRate;
+						}
+
+						decimal averagePrice = totalPrice / totalWeight;
+						DateTime middleTime = spanStartTime + halfTimeSpan;
+						double averageX = GetStockPositionX(middleTime);
+						double averageY = GetStockPositionY(averagePrice);
+
+						if (lastAverageY != double.MinValue)
+						{
+							Line line = new Line();
+							line.X1 = lastAverageX;
+							line.Y1 = lastAverageY;
+							line.X2 = averageX;
+							line.Y2 = averageY;
+							line.Stroke = lineColor;
+							line.StrokeThickness = 2;
+							canvas.Children.Add(line);
+						}
+
+						lastAverageX = averageX;
+						lastAverageY = averageY;
+
+						pointsInSpan.Clear();
+						spanStartTime = endTime;
+						endTime = spanStartTime + timeSpan;
+					}
+					pointsInSpan.Add(stockDataPoint);
+				}
 		}
 
 		public StockDataPoint GetNearestPointInTime(DateTime time)

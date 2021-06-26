@@ -14,6 +14,86 @@
             </Canvas>
             <Canvas x:Name="cvsAdornments" Height="700" Width="1900">
             </Canvas>
+            <Canvas x:Name="cvsAnalysis" Height="700" Width="1900">
+            </Canvas>
+            <Canvas x:Name="cvsHints" Height="700" Width="1900">
+                <Viewbox x:Name="stockHintPointingLeft" Width="360" Visibility="Visible">
+                    <Canvas Width="2399" Height="752">
+                        <Path Fill="#FFBFBFBF">
+                            <Path.Data>
+                                <PathGeometry Figures="M353.125,54.5L2352.75,54.5C2375.25,54.5,2393.5,67.125,2393.5,82.75L2393.5,714.375C2393.5,730,2375.25,742.5,2352.75,742.5L353.125,742.5C330.5,742.5,312.25,730,312.25,714.375L312.25,359.875 59.5,253.25 312.25,146.625 312.25,82.75C312.25,67.125,330.5,54.5,353.125,54.5z" />
+                            </Path.Data>
+                        </Path>
+                        <Path Fill="#FFFFFAEB">
+                            <Path.Data>
+                                <PathGeometry Figures="M326.125,32.5L2325.75,32.5C2348.25,32.5,2366.5,45.125,2366.5,60.75L2366.5,691.375C2366.5,707,2348.25,719.5,2325.75,719.5L326.125,719.5C303.5,719.5,285.25,707,285.25,691.375L285.25,337.375 32.5,231 285.25,124.5 285.25,60.75C285.25,45.125,303.5,32.5,326.125,32.5z" />
+                            </Path.Data>
+                        </Path>
+                        <Canvas>
+                            <Canvas.Clip>
+                                <RectangleGeometry Rect="22,29,2372,714" />
+                            </Canvas.Clip>
+                            <Path Stroke="#FFBF9000" StrokeThickness="8.375">
+                                <Path.Data>
+                                    <PathGeometry Figures="M326.125,32.5L2325.75,32.5C2348.25,32.5,2366.5,45.125,2366.5,60.75L2366.5,691.375C2366.5,707,2348.25,719.5,2325.75,719.5L326.125,719.5C303.5,719.5,285.25,707,285.25,691.375L285.25,337.375 32.5,231 285.25,124.5 285.25,60.75C285.25,45.125,303.5,32.5,326.125,32.5z" />
+                                </Path.Data>
+                            </Path>
+                        </Canvas>
+                    </Canvas>
+                </Viewbox>
+                <Viewbox x:Name="stockHintPointingRight" Width="360" Visibility="Hidden">
+                    <Canvas Width="2399" Height="752">
+                        <Path Fill="#FFBFBFBF">
+                            <Path.Data>
+                                <PathGeometry Figures="M2097.875,55.5L97.375,55.5C74.875,55.5,56.5,68.125,56.5,83.75L56.5,714.375C56.5,730,74.875,742.5,97.375,742.5L2097.875,742.5C2120.5,742.5,2138.75,730,2138.75,714.375L2138.75,360.375 2391.5,254 2138.75,147.5 2138.75,83.75C2138.75,68.125,2120.5,55.5,2097.875,55.5z" />
+                            </Path.Data>
+                        </Path>
+                        <Path Fill="#FFFFFAEB">
+                            <Path.Data>
+                                <PathGeometry Figures="M2073,32.5L73.375,32.5C50.875,32.5,32.5,45.125,32.5,60.75L32.5,691.375C32.5,707,50.875,719.5,73.375,719.5L2073,719.5C2095.625,719.5,2113.875,707,2113.875,691.375L2113.875,337.375 2366.5,231 2113.875,124.5 2113.875,60.75C2113.875,45.125,2095.625,32.5,2073,32.5z" />
+                            </Path.Data>
+                        </Path>
+                        <Canvas>
+                            <Canvas.Clip>
+                                <RectangleGeometry Rect="29,29,2363,714" />
+                            </Canvas.Clip>
+                            <Path Stroke="#FFBF9000" StrokeThickness="8.375">
+                                <Path.Data>
+                                    <PathGeometry Figures="M2073,32.5L73.375,32.5C50.875,32.5,32.5,45.125,32.5,60.75L32.5,691.375C32.5,707,50.875,719.5,73.375,719.5L2073,719.5C2095.625,719.5,2113.875,707,2113.875,691.375L2113.875,337.375 2366.5,231 2113.875,124.5 2113.875,60.75C2113.875,45.125,2095.625,32.5,2073,32.5z" />
+                                </Path.Data>
+                            </Path>
+                        </Canvas>
+                    </Canvas>
+                </Viewbox>
+                <!--Canvas.Left="10" Canvas.Top="10"-->
+                <Grid x:Name="grdStockTickDetails" Height="115" Width="280" Canvas.Left="53" Canvas.Top="10" Visibility="Visible">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="8"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.Resources>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="FontSize" Value="16.3"></Setter>
+                            <Setter Property="Foreground" Value="#FF4F442B"></Setter>
+                        </Style>
+                    </Grid.Resources>
+                    <TextBlock Text="Trade Price:" Width="Auto" Height="Auto"/>
+                    <TextBlock Grid.Row="1" Text="Highest Bid:" Width="Auto" Height="Auto"/>
+                    <TextBlock Grid.Row="2" Text="Lowest Ask:" Width="Auto" Height="Auto"/>
+                    <TextBlock Grid.Row="3" Text="Time:" Width="Auto" Height="Auto"/>
+                    <TextBlock Grid.Column="2" x:Name="tbTradePrice" Text="2 BTC" Width="Auto" Height="Auto" FontWeight="Bold" Foreground="Black" />
+                    <TextBlock Grid.Column="2" Grid.Row="1" x:Name="tbHighestBid" Text="3 BTC" Width="Auto" Foreground="Black" Height="Auto"/>
+                    <TextBlock Grid.Column="2" Grid.Row="2" x:Name="tbLowestAsk" Text="4 BTC" Width="Auto" Foreground="Black" Height="Auto"/>
+                    <TextBlock Grid.Column="2" Grid.Row="3" x:Name="tbTime" Text="0:00" Width="Auto" Foreground="Black" Height="Auto"/>
+                </Grid>
+            </Canvas>
         </Grid>
     </StackPanel>
 </Window>
