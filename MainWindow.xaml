@@ -5,16 +5,17 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:StockAnalysis"
         mc:Ignorable="d"
-        Title="MainWindow" Height="900" Width="1900" Closing="Window_Closing" PreviewMouseMove="MainWindow_PreviewMouseMove">
+        Title="MainWindow" Height="900" Width="1900" Closing="Window_Closing" PreviewMouseMove="MainWindow_PreviewMouseMove"  PreviewMouseDown="Window_MouseDown" PreviewMouseUp="Window_PreviewMouseUp">
     <StackPanel Orientation="Vertical">
         <TextBlock x:Name="tbStockPrice" Text="No stock price yet!!!" Width="Auto" Height="Auto" FontSize="40"/>
-        <Grid Height="500" Width="1900">
+        <Grid Height="700" Width="1900">
             <Canvas x:Name="cvsMain" Height="700" Width="1900">
-
             </Canvas>
             <Canvas x:Name="cvsAdornments" Height="700" Width="1900">
             </Canvas>
-            <Canvas x:Name="cvsAnalysis" Height="700" Width="1900">
+            <Canvas x:Name="cvsAnalysis" Height="700" Width="1900" Margin="0, 300, 0, 0">
+            </Canvas>
+            <Canvas x:Name="cvsSelection" Height="700" Width="1900">
             </Canvas>
             <Canvas x:Name="cvsHints" Height="700" Width="1900">
                 <Viewbox x:Name="stockHintPointingLeft" Width="360" Visibility="Visible">

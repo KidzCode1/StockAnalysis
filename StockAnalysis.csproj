@@ -146,6 +146,8 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="ChartTranslator.cs" />
+    <Compile Include="Selection.cs" />
+    <Compile Include="SelectionModes.cs" />
     <Compile Include="StockDataPoint.cs" />
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>

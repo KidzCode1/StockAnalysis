@@ -42,6 +42,9 @@ namespace StockAnalysis
 
 		public MainWindow()
 		{
+			Selection.OnChange += Selection_OnChange;
+			Selection.OnChanging += Selection_OnChanging;
+
 			InitializeComponent();
 			bitcoinTicker = bittrexClient.GetTicker("BTC-USDT");
 			tbStockPrice.Text = $"BTC: ${bitcoinTicker.Data.LastTradeRate}";
@@ -61,6 +64,26 @@ namespace StockAnalysis
 				DrawGraph();
 				tbStockPrice.Text = $"{data.Symbol}: ${data.LastTradeRate}";
 			});
+		}
+
+		void ChartPoints(Canvas canvas, List<Point> smallMovingAverage, SolidColorBrush brush, int lineThickness)
+		{
+			double lastX = double.MinValue;
+			double lastY = double.MinValue;
+
+			foreach (Point point in smallMovingAverage)
+			{
+				if (lastX != double.MinValue)
+				{
+					Line line = CreateLine(lastX, lastY, point.X, point.Y, lineThickness);
+					line.Stroke = brush;
+					line.StrokeEndLineCap = PenLineCap.Round;
+					canvas.Children.Add(line);
+				}
+
+				lastX = point.X;
+				lastY = point.Y;
+			}
 		}
 
 		private void DrawGraph()
@@ -91,7 +114,24 @@ namespace StockAnalysis
 				}
 
 			AddAdornments(lastMousePosition);
-			chartTranslator.AddMovingAverage(5, cvsAnalysis, new SolidColorBrush(Color.FromArgb(127, 0, 255, 47)));
+			UpdateSelection();
+			DrawAnalysisCharts();
+		}
+
+		private void DrawAnalysisCharts()
+		{
+			cvsAnalysis.Children.Clear();
+
+			//chartTranslator.AddMovingAverage(20, cvsAnalysis, new SolidColorBrush(Color.FromArgb(127, 27, 0, 163)));
+			//chartTranslator.AddMovingAverage(200, cvsAnalysis, new SolidColorBrush(Color.FromArgb(127, 0, 178, 33)));
+
+			List<Point> smallMovingAverage = chartTranslator.GetMovingAverages(20);
+			ChartPoints(cvsAnalysis, smallMovingAverage, new SolidColorBrush(Color.FromArgb(127, 27, 0, 163)), 4);
+
+			List<Point> largerMovingAverage = chartTranslator.GetMovingAverages(100);
+			ChartPoints(cvsAnalysis, largerMovingAverage, new SolidColorBrush(Color.FromArgb(127, 34, 171, 0)), 8);
+
+			//chartTranslator.AddMovingAverage(5, cvsMain, new SolidColorBrush(Color.FromArgb(127, 0, 255, 47)));
 		}
 
 		private void AddDot(double lastY, double x, double y, StockDataPoint stockDataPoint)
@@ -135,14 +175,14 @@ namespace StockAnalysis
 			cvsMain.Children.Insert(0, line);  // All lines go to the back.
 		}
 
-		private static Line CreateLine(double lastX, double lastY, double x, double y)
+		private static Line CreateLine(double lastX, double lastY, double x, double y, double lineThickness = 1)
 		{
 			Line line = new Line();
 			line.X1 = lastX;
 			line.Y1 = lastY;
 			line.X2 = x;
 			line.Y2 = y;
-			line.StrokeThickness = 1;
+			line.StrokeThickness = lineThickness;
 			return line;
 		}
 
@@ -214,6 +254,7 @@ namespace StockAnalysis
 		private void MainWindow_PreviewMouseMove(object sender, MouseEventArgs e)
 		{
 			AddAdorments(e);
+			UpdateSelectionIfNeeded(e);
 		}
 
 		private void AddAdorments(MouseEventArgs e)
@@ -239,7 +280,7 @@ namespace StockAnalysis
 			tbTradePrice.Text = $"{GetNum(nearestPoint.Tick.LastTradeRate)} {currency}";
 			tbHighestBid.Text = $"{GetNum(nearestPoint.Tick.BidRate)} {currency}";
 			tbLowestAsk.Text = $"{GetNum(nearestPoint.Tick.AskRate)} {currency}";
-			tbTime.Text = $"{nearestPoint.Time}";
+			tbTime.Text = $"{nearestPoint.Time:yyy MMM dd hh:mm:ss.fff}";
 			grdStockTickDetails.Visibility = Visibility.Visible;
 			double yPos = y - 34;
 			
@@ -327,6 +368,7 @@ namespace StockAnalysis
 			
 
 			Line line = CreateLine(position.X, 0, position.X, cvsAdornments.Height);
+			line.IsHitTestVisible = false;
 			line.Stroke = new SolidColorBrush(Color.FromArgb(200, 115, 115, 115));
 			line.StrokeDashArray.Add(5);
 			line.StrokeDashArray.Add(3);
@@ -336,6 +378,71 @@ namespace StockAnalysis
 		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
 			bittrexSocketClient.UnsubscribeAll();
+		}
+
+		private void Window_MouseDown(object sender, MouseButtonEventArgs e)
+		{
+			Point position = e.GetPosition(cvsSelection);
+			if (Selection.IsInBounds(position.X, position.Y))
+			{
+				Selection.Mode = SelectionModes.DraggingToSelect;
+				Title = "Mouse down detected! DraggingToSelect...";
+				Selection.Anchor = chartTranslator.GetTimeFromX(position.X);
+				cvsSelection.CaptureMouse();
+			}
+		}
+
+		void UpdateSelection()
+		{
+			cvsSelection.Children.Clear();
+			if (!Selection.Exists)
+				return;
+			Rectangle selectionRect = new Rectangle();
+			selectionRect.Fill = new SolidColorBrush(Color.FromArgb(73, 54, 127, 255));
+			Canvas.SetTop(selectionRect, 0);
+			selectionRect.Height = cvsSelection.ActualHeight;
+
+			double leftSide = chartTranslator.GetStockPositionX(Selection.Start);  // 750
+			double rightSide = chartTranslator.GetStockPositionX(Selection.End);   // 1100
+
+			Canvas.SetLeft(selectionRect, leftSide);
+
+			selectionRect.Width = rightSide - leftSide;
+
+			cvsSelection.Children.Add(selectionRect);
+		}
+
+		private void Selection_OnChanging(object sender, EventArgs e)
+		{
+			UpdateSelection();
+		}
+
+		private void Selection_OnChange(object sender, EventArgs e)
+		{
+			UpdateSelection();
+		}
+
+		private void Window_PreviewMouseUp(object sender, MouseButtonEventArgs e)
+		{
+			if (Selection.Mode == SelectionModes.DraggingToSelect)
+			{
+				cvsSelection.ReleaseMouseCapture();
+				Title = "Mouse up detected. Selection complete.";
+				Point position = e.GetPosition(cvsSelection);
+				Selection.Cursor = chartTranslator.GetTimeFromX(position.X);
+				Selection.Mode = SelectionModes.Normal;
+				Selection.Changed();
+			}
+		}
+		void UpdateSelectionIfNeeded(MouseEventArgs e)
+		{
+			if (Selection.Mode == SelectionModes.DraggingToSelect)
+			{
+				Point position = e.GetPosition(cvsSelection);
+				Title = $"Moving mouse ({position.X}, {position.Y})";
+				Selection.Cursor = chartTranslator.GetTimeFromX(position.X);
+				Selection.Changing();
+			}
 		}
 	}
 }
