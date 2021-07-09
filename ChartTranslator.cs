@@ -1,5 +1,4 @@
-﻿using Bittrex.Net.Objects;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -118,7 +117,7 @@ namespace StockAnalysis
 			return distanceFromTopPixels;
 		}
 
-		public StockDataPoint AddStockPosition(BittrexTick data)
+		public StockDataPoint AddStockPosition(CustomTick data)
 		{
 			StockDataPoint stockDataPoint = new StockDataPoint(data);
 			if (stockDataPoints.Count >= 2)

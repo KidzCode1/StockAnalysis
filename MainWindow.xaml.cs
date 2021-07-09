@@ -57,7 +57,8 @@ namespace StockAnalysis
 
 		void UpdateLastPrice(BittrexTick data)
 		{
-			chartTranslator.AddStockPosition(data);
+			CustomTick ourData = new CustomTick(data);
+			chartTranslator.AddStockPosition(ourData);
 
 			Dispatcher.Invoke(() =>
 			{

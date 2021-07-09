@@ -146,6 +146,7 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="ChartTranslator.cs" />
+    <Compile Include="CustomTick.cs" />
     <Compile Include="Selection.cs" />
     <Compile Include="SelectionModes.cs" />
     <Compile Include="StockDataPoint.cs" />
