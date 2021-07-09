@@ -36,10 +36,10 @@ namespace StockAnalysis
 			lock (stockDataPointsLock)
 				foreach (StockDataPoint stockDataPoint in stockDataPoints)
 				{
-					if (stockDataPoint.Tick.LastTradeRate < low)
-						low = stockDataPoint.Tick.LastTradeRate;
-					if (stockDataPoint.Tick.LastTradeRate > high)
-						high = stockDataPoint.Tick.LastTradeRate;
+					if (stockDataPoint.Tick.LastTradePrice < low)
+						low = stockDataPoint.Tick.LastTradePrice;
+					if (stockDataPoint.Tick.LastTradePrice > high)
+						high = stockDataPoint.Tick.LastTradePrice;
 				}
 
 			if (high == low)  // Only one data point?
@@ -125,9 +125,9 @@ namespace StockAnalysis
 				int lastIndex = stockDataPoints.Count - 1;
 				StockDataPoint lastPoint = stockDataPoints[lastIndex];
 				StockDataPoint secondToLastPoint = stockDataPoints[lastIndex - 1];
-				if (lastPoint.Tick.LastTradeRate == secondToLastPoint.Tick.LastTradeRate)
+				if (lastPoint.Tick.LastTradePrice == secondToLastPoint.Tick.LastTradePrice)
 				{
-					if (lastPoint.Tick.LastTradeRate == data.LastTradeRate)
+					if (lastPoint.Tick.LastTradePrice == data.LastTradePrice)
 					{
 						// Last two points, plus this one are the same. We can remove the middle point.
 						lock (stockDataPointsLock)
@@ -209,7 +209,7 @@ namespace StockAnalysis
 			foreach (StockDataPoint dataPoint in pointsInSpan)
 			{
 				totalWeight += dataPoint.Weight;
-				totalPrice += dataPoint.Tick.LastTradeRate * dataPoint.Weight;
+				totalPrice += dataPoint.Tick.LastTradePrice * dataPoint.Weight;
 			}
 
 			if (totalWeight == 0)
@@ -251,27 +251,6 @@ namespace StockAnalysis
 			return closestDataPoint;
 		}
 
-		List<StockDataPoint> GetDataPointsInRange(DateTime time, int timeSpanSeconds)
-		{
-			DateTime startRange = time - TimeSpan.FromSeconds(timeSpanSeconds / 2.0);
-			DateTime endRange = time + TimeSpan.FromSeconds(timeSpanSeconds / 2.0);
-
-			List<StockDataPoint> pointsInRange = new List<StockDataPoint>();
-			lock (stockDataPointsLock)
-				foreach (StockDataPoint stockDataPoint in StockDataPoints)
-				{
-					if (stockDataPoint.Time > endRange)
-						return pointsInRange;
-
-					if (stockDataPoint.Time > startRange)
-					{
-						// We can work with this data!
-						pointsInRange.Add(stockDataPoint);
-					}
-				}
-			return pointsInRange;
-		}
-
 		public List<Point> GetMovingAverages(int timeSpanSeconds)
 		{
 			DateTime currentTime = DateTime.MinValue;
@@ -284,7 +263,7 @@ namespace StockAnalysis
 			for (int i = 0; i < numberOfDataPoints; i++)
 			{
 				DateTime timeAtDataPoint = start + TimeSpan.FromSeconds(i * secondsPerDataPoint);
-				List<StockDataPoint> dataPointsInRange = GetDataPointsInRange(timeAtDataPoint, timeSpanSeconds);
+				List<StockDataPoint> dataPointsInRange = GetPointsAroundTime(timeAtDataPoint, timeSpanSeconds);
 				decimal averagePrice = GetAveragePrice(dataPointsInRange);
 				if (averagePrice == decimal.MinValue)
 					continue;
@@ -294,6 +273,29 @@ namespace StockAnalysis
 				points.Add(point);
 			}
 			return points;
+		}
+
+		List<StockDataPoint> GetPointsAroundTime(DateTime timeCenterPoint, int timeSpanSeconds)
+		{
+			double halfTimeSpan = timeSpanSeconds / 2.0;
+			TimeSpan halfTimeSpanSeconds = TimeSpan.FromSeconds(halfTimeSpan);
+
+			DateTime startRange = timeCenterPoint - halfTimeSpanSeconds;
+			DateTime endRange = timeCenterPoint + halfTimeSpanSeconds;
+			return GetPointsInRange(startRange, endRange);
+		}
+
+		public List<StockDataPoint> GetPointsInRange(DateTime start, DateTime end)
+		{
+			List<StockDataPoint> pointsInRange = new List<StockDataPoint>();
+			lock (stockDataPointsLock)
+				foreach (StockDataPoint stockDataPoint in StockDataPoints)
+					if (stockDataPoint.Time > end)
+						return pointsInRange;
+					else if (stockDataPoint.Time >= start)   // We can work with this data!
+						pointsInRange.Add(stockDataPoint);
+
+			return pointsInRange;
 		}
 	}
 }

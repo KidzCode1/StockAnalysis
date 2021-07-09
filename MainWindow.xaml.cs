@@ -100,7 +100,7 @@ namespace StockAnalysis
 				foreach (StockDataPoint stockDataPoint in chartTranslator.StockDataPoints)
 				{
 					double x = chartTranslator.GetStockPositionX(stockDataPoint.Time);
-					double y = chartTranslator.GetStockPositionY(stockDataPoint.Tick.LastTradeRate);
+					double y = chartTranslator.GetStockPositionY(stockDataPoint.Tick.LastTradePrice);
 					AddDot(lastY, x, y, stockDataPoint);
 
 					if (alreadyDrawnAtLeastOnePoint)
@@ -278,9 +278,9 @@ namespace StockAnalysis
 			int dashIndex = symbol.IndexOf("-");
 			if (dashIndex >= 0)
 				currency = symbol.Substring(dashIndex + 1);
-			tbTradePrice.Text = $"{GetNum(nearestPoint.Tick.LastTradeRate)} {currency}";
-			tbHighestBid.Text = $"{GetNum(nearestPoint.Tick.BidRate)} {currency}";
-			tbLowestAsk.Text = $"{GetNum(nearestPoint.Tick.AskRate)} {currency}";
+			tbTradePrice.Text = $"{GetNum(nearestPoint.Tick.LastTradePrice)} {currency}";
+			tbHighestBid.Text = $"{GetNum(nearestPoint.Tick.HighestBidPrice)} {currency}";
+			tbLowestAsk.Text = $"{GetNum(nearestPoint.Tick.LowestAskPrice)} {currency}";
 			tbTime.Text = $"{nearestPoint.Time:yyy MMM dd hh:mm:ss.fff}";
 			grdStockTickDetails.Visibility = Visibility.Visible;
 			double yPos = y - 34;
@@ -328,11 +328,13 @@ namespace StockAnalysis
 				StockDataPoint nearestPoint = closestEllipse.Tag as StockDataPoint;
 				if (nearestPoint != null)
 				{
-					Title = $"{nearestPoint.Tick.LastTradeRate}";
+					//Title = $"{nearestPoint.Tick.LastTradePrice}";
 					ShowHintData(x, y, nearestPoint);
 				}
 				else
-					Title = "Move mouse near point to see value!";
+				{
+					//Title = "Move mouse near point to see value!";
+				}
 			}
 		}
 
@@ -443,6 +445,40 @@ namespace StockAnalysis
 				Title = $"Moving mouse ({position.X}, {position.Y})";
 				Selection.Cursor = chartTranslator.GetTimeFromX(position.X);
 				Selection.Changing();
+			}
+		}
+
+		bool AreEqual(List<StockDataPoint> range1, List<StockDataPoint> range2)
+		{
+			if (range1.Count != range2.Count)
+				return false;
+
+			for (int i = 0; i < range1.Count; i++)
+				if (!range1[i].Equals(range2[i]))
+					return false;
+
+			return true;
+		}
+
+		private void btnTestSelection_Click(object sender, RoutedEventArgs e)
+		{
+			if (Selection.Exists)
+			{
+				List<StockDataPoint> pointsInRange = chartTranslator.GetPointsInRange(Selection.Start, Selection.End);
+				string serializeObject = Newtonsoft.Json.JsonConvert.SerializeObject(pointsInRange, Newtonsoft.Json.Formatting.Indented);
+				string folderPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+				string fullPathToFile = System.IO.Path.Combine(folderPath, "TestFile.json");
+				System.IO.File.WriteAllText(fullPathToFile, serializeObject);
+
+				string readFromFileStr = System.IO.File.ReadAllText(fullPathToFile);
+
+				List<StockDataPoint> data = Newtonsoft.Json.JsonConvert.DeserializeObject<List<StockDataPoint>>(readFromFileStr);
+				if (AreEqual(pointsInRange, data))
+				{
+					Title = "It worked!";
+				}
+				else
+					Title = "Failure!";
 			}
 		}
 	}

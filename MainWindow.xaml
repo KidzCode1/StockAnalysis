@@ -8,6 +8,9 @@
         Title="MainWindow" Height="900" Width="1900" Closing="Window_Closing" PreviewMouseMove="MainWindow_PreviewMouseMove"  PreviewMouseDown="Window_MouseDown" PreviewMouseUp="Window_PreviewMouseUp">
     <StackPanel Orientation="Vertical">
         <TextBlock x:Name="tbStockPrice" Text="No stock price yet!!!" Width="Auto" Height="Auto" FontSize="40"/>
+        <Button x:Name="btnTestSelection" Click="btnTestSelection_Click" MaxWidth="75">
+            Test Selection
+        </Button>
         <Grid Height="700" Width="1900">
             <Canvas x:Name="cvsMain" Height="700" Width="1900">
             </Canvas>
