@@ -1,9 +1,12 @@
 ﻿using Bittrex.Net;
 using Bittrex.Net.Objects;
 using CryptoExchange.Net.Objects;
+using Newtonsoft.Json;
 using System;
+using BotTraderCore;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -67,12 +70,12 @@ namespace StockAnalysis
 			});
 		}
 
-		void ChartPoints(Canvas canvas, List<Point> smallMovingAverage, SolidColorBrush brush, int lineThickness)
+		void ChartPoints(Canvas canvas, List<PointXY> smallMovingAverage, SolidColorBrush brush, int lineThickness)
 		{
 			double lastX = double.MinValue;
 			double lastY = double.MinValue;
 
-			foreach (Point point in smallMovingAverage)
+			foreach (PointXY point in smallMovingAverage)
 			{
 				if (lastX != double.MinValue)
 				{
@@ -96,8 +99,8 @@ namespace StockAnalysis
 
 			cvsMain.Children.Clear();
 
-			lock (chartTranslator.stockDataPointsLock)
-				foreach (StockDataPoint stockDataPoint in chartTranslator.StockDataPoints)
+			List<StockDataPoint> stockDataPoints = chartTranslator.GetStockDataPoints();
+			foreach (StockDataPoint stockDataPoint in stockDataPoints)
 				{
 					double x = chartTranslator.GetStockPositionX(stockDataPoint.Time);
 					double y = chartTranslator.GetStockPositionY(stockDataPoint.Tick.LastTradePrice);
@@ -126,10 +129,10 @@ namespace StockAnalysis
 			//chartTranslator.AddMovingAverage(20, cvsAnalysis, new SolidColorBrush(Color.FromArgb(127, 27, 0, 163)));
 			//chartTranslator.AddMovingAverage(200, cvsAnalysis, new SolidColorBrush(Color.FromArgb(127, 0, 178, 33)));
 
-			List<Point> smallMovingAverage = chartTranslator.GetMovingAverages(20);
+			List<PointXY> smallMovingAverage = chartTranslator.GetMovingAverages(20);
 			ChartPoints(cvsAnalysis, smallMovingAverage, new SolidColorBrush(Color.FromArgb(127, 27, 0, 163)), 4);
 
-			List<Point> largerMovingAverage = chartTranslator.GetMovingAverages(100);
+			List<PointXY> largerMovingAverage = chartTranslator.GetMovingAverages(100);
 			ChartPoints(cvsAnalysis, largerMovingAverage, new SolidColorBrush(Color.FromArgb(127, 34, 171, 0)), 8);
 
 			//chartTranslator.AddMovingAverage(5, cvsMain, new SolidColorBrush(Color.FromArgb(127, 0, 255, 47)));
@@ -448,32 +451,19 @@ namespace StockAnalysis
 			}
 		}
 
-		bool AreEqual(List<StockDataPoint> range1, List<StockDataPoint> range2)
-		{
-			if (range1.Count != range2.Count)
-				return false;
-
-			for (int i = 0; i < range1.Count; i++)
-				if (!range1[i].Equals(range2[i]))
-					return false;
-
-			return true;
-		}
-
 		private void btnTestSelection_Click(object sender, RoutedEventArgs e)
 		{
 			if (Selection.Exists)
 			{
-				List<StockDataPoint> pointsInRange = chartTranslator.GetPointsInRange(Selection.Start, Selection.End);
-				string serializeObject = Newtonsoft.Json.JsonConvert.SerializeObject(pointsInRange, Newtonsoft.Json.Formatting.Indented);
-				string folderPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-				string fullPathToFile = System.IO.Path.Combine(folderPath, "TestFile.json");
-				System.IO.File.WriteAllText(fullPathToFile, serializeObject);
+				List<StockDataPoint> selectedPoints = chartTranslator.GetPointsInRange(Selection.Start, Selection.End);
 
-				string readFromFileStr = System.IO.File.ReadAllText(fullPathToFile);
+				string fullPathToFile = Folders.GetTestFilePath("Test3.json");
 
-				List<StockDataPoint> data = Newtonsoft.Json.JsonConvert.DeserializeObject<List<StockDataPoint>>(readFromFileStr);
-				if (AreEqual(pointsInRange, data))
+				selectedPoints.Save(fullPathToFile);
+
+				List<StockDataPoint> loadedPoints = StockDataPoint.Load(fullPathToFile);
+
+				if (selectedPoints.Matches(loadedPoints))
 				{
 					Title = "It worked!";
 				}

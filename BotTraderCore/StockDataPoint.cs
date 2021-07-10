@@ -1,9 +1,11 @@
 ﻿using Bittrex.Net.Objects;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 
-namespace StockAnalysis
+namespace BotTraderCore
 {
 	public class StockDataPoint
 	{
@@ -15,10 +17,11 @@ namespace StockAnalysis
 		{
 			Tick = tick;
 			Time = DateTime.Now;
+			Weight = 1;
 		}
 		public StockDataPoint()
 		{
-
+			Weight = 1;
 		}
 
 		public static bool operator ==(StockDataPoint left, StockDataPoint right)
@@ -38,6 +41,7 @@ namespace StockAnalysis
 			// TODO: Modify this hash code calculation, if desired.
 			return base.GetHashCode();
 		}
+
 		public override bool Equals(object obj)
 		{
 			if (obj is StockDataPoint)
@@ -61,6 +65,13 @@ namespace StockAnalysis
 				return false;
 
 			return true;
+		}
+
+		public static List<StockDataPoint> Load(string fullPathToFile)
+		{
+			string readFromFileStr = File.ReadAllText(fullPathToFile);
+			List<StockDataPoint> data = JsonConvert.DeserializeObject<List<StockDataPoint>>(readFromFileStr);
+			return data;
 		}
 	}
 }

@@ -3,7 +3,7 @@ using Newtonsoft.Json;
 using System;
 using System.Linq;
 
-namespace StockAnalysis
+namespace BotTraderCore
 {
 	public class CustomTick
 	{

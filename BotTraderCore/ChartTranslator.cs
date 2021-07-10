@@ -2,12 +2,8 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Media;
-using System.Windows.Shapes;
 
-namespace StockAnalysis
+namespace BotTraderCore
 {
 	public class ChartTranslator
 	{
@@ -144,63 +140,63 @@ namespace StockAnalysis
 			return stockDataPoint;
 		}
 
-		public void AddMovingAverage(double spanDurationSeconds, Canvas canvas, Brush lineColor)
-		{
-			TimeSpan timeSpan = TimeSpan.FromSeconds(spanDurationSeconds);
-			TimeSpan halfTimeSpan = TimeSpan.FromSeconds(spanDurationSeconds / 2.0);
-			DateTime spanStartTime = start;
-			DateTime spanEndTime = spanStartTime + timeSpan;
+		//public void AddMovingAverage(double spanDurationSeconds, Canvas canvas, Brush lineColor)
+		//{
+		//	TimeSpan timeSpan = TimeSpan.FromSeconds(spanDurationSeconds);
+		//	TimeSpan halfTimeSpan = TimeSpan.FromSeconds(spanDurationSeconds / 2.0);
+		//	DateTime spanStartTime = start;
+		//	DateTime spanEndTime = spanStartTime + timeSpan;
 
-			List<StockDataPoint> pointsInSpan = new List<StockDataPoint>();
-			double lastAverageX = 0;
-			double lastAverageY = double.MinValue;
+		//	List<StockDataPoint> pointsInSpan = new List<StockDataPoint>();
+		//	double lastAverageX = 0;
+		//	double lastAverageY = double.MinValue;
 
-			lock (stockDataPointsLock)
-				foreach (StockDataPoint stockDataPoint in StockDataPoints)
-				{
-					if (stockDataPoint.Time > spanEndTime)
-					{
-						DateTime middleTime = spanStartTime + halfTimeSpan;
-						double averageX = GetStockPositionX(middleTime);
+		//	lock (stockDataPointsLock)
+		//		foreach (StockDataPoint stockDataPoint in StockDataPoints)
+		//		{
+		//			if (stockDataPoint.Time > spanEndTime)
+		//			{
+		//				DateTime middleTime = spanStartTime + halfTimeSpan;
+		//				double averageX = GetStockPositionX(middleTime);
 
-						if (pointsInSpan.Count > 0)
-						{
-							// We are outside of the span we are interested in.
-							// That means we need to calculate the moving average for the points we have collected.
-							decimal averagePrice = GetAveragePrice(pointsInSpan);
-							double averageY = GetStockPositionY(averagePrice);
+		//				if (pointsInSpan.Count > 0)
+		//				{
+		//					// We are outside of the span we are interested in.
+		//					// That means we need to calculate the moving average for the points we have collected.
+		//					decimal averagePrice = GetAveragePrice(pointsInSpan);
+		//					double averageY = GetStockPositionY(averagePrice);
 
-							DrawLine(canvas, lineColor, lastAverageX, lastAverageY, averageX, averageY);
+		//					DrawLine(canvas, lineColor, lastAverageX, lastAverageY, averageX, averageY);
 
-							lastAverageY = averageY;
+		//					lastAverageY = averageY;
 
-							StockDataPoint lastPoint = pointsInSpan[pointsInSpan.Count - 1];
-							pointsInSpan.Clear();
-							if (stockDataPoint.Time > spanEndTime)
-								pointsInSpan.Add(lastPoint);
-						}
-						else
-						{
-							DrawLine(canvas, lineColor, lastAverageX, lastAverageY, averageX, lastAverageY);
-						}
+		//					StockDataPoint lastPoint = pointsInSpan[pointsInSpan.Count - 1];
+		//					pointsInSpan.Clear();
+		//					if (stockDataPoint.Time > spanEndTime)
+		//						pointsInSpan.Add(lastPoint);
+		//				}
+		//				else
+		//				{
+		//					DrawLine(canvas, lineColor, lastAverageX, lastAverageY, averageX, lastAverageY);
+		//				}
 
-						lastAverageX = averageX;
+		//				lastAverageX = averageX;
 
-						if (pointsInSpan.Count > 0)
-						{
-							while (spanStartTime < pointsInSpan[0].Time - timeSpan)
-							{
-								spanStartTime += timeSpan;
-							}
-						}
-						else
-							spanStartTime = spanEndTime;
+		//				if (pointsInSpan.Count > 0)
+		//				{
+		//					while (spanStartTime < pointsInSpan[0].Time - timeSpan)
+		//					{
+		//						spanStartTime += timeSpan;
+		//					}
+		//				}
+		//				else
+		//					spanStartTime = spanEndTime;
 
-						spanEndTime = spanStartTime + timeSpan;
-					}
-					pointsInSpan.Add(stockDataPoint);
-				}
-		}
+		//				spanEndTime = spanStartTime + timeSpan;
+		//			}
+		//			pointsInSpan.Add(stockDataPoint);
+		//		}
+		//}
 
 		private static decimal GetAveragePrice(List<StockDataPoint> pointsInSpan)
 		{
@@ -219,20 +215,20 @@ namespace StockAnalysis
 			return averagePrice;
 		}
 
-		private static void DrawLine(Canvas canvas, Brush lineColor, double lastAverageX, double lastAverageY, double averageX, double averageY)
-		{
-			if (lastAverageY != double.MinValue)
-			{
-				Line line = new Line();
-				line.X1 = lastAverageX;
-				line.Y1 = lastAverageY;
-				line.X2 = averageX;
-				line.Y2 = averageY;
-				line.Stroke = lineColor;
-				line.StrokeThickness = 4;
-				canvas.Children.Add(line);
-			}
-		}
+		//private static void DrawLine(Canvas canvas, Brush lineColor, double lastAverageX, double lastAverageY, double averageX, double averageY)
+		//{
+		//	if (lastAverageY != double.MinValue)
+		//	{
+		//		Line line = new Line();
+		//		line.X1 = lastAverageX;
+		//		line.Y1 = lastAverageY;
+		//		line.X2 = averageX;
+		//		line.Y2 = averageY;
+		//		line.Stroke = lineColor;
+		//		line.StrokeThickness = 4;
+		//		canvas.Children.Add(line);
+		//	}
+		//}
 
 		public StockDataPoint GetNearestPointInTime(DateTime time)
 		{
@@ -251,14 +247,14 @@ namespace StockAnalysis
 			return closestDataPoint;
 		}
 
-		public List<Point> GetMovingAverages(int timeSpanSeconds)
+		public List<PointXY> GetMovingAverages(int timeSpanSeconds)
 		{
 			DateTime currentTime = DateTime.MinValue;
 			currentTime = start;
 			TimeSpan timeAcross = end - start;
 			double totalSecondsAcross = timeAcross.TotalSeconds;
 			const int numberOfDataPoints = 200;
-			List<Point> points = new List<Point>();
+			List<PointXY> points = new List<PointXY>();
 			double secondsPerDataPoint = totalSecondsAcross / numberOfDataPoints;
 			for (int i = 0; i < numberOfDataPoints; i++)
 			{
@@ -269,7 +265,7 @@ namespace StockAnalysis
 					continue;
 				double stockPositionX = GetStockPositionX(timeAtDataPoint);
 				double stockPositionY = GetStockPositionY(averagePrice);
-				Point point = new Point(stockPositionX, stockPositionY);
+				PointXY point = new PointXY(stockPositionX, stockPositionY);
 				points.Add(point);
 			}
 			return points;
@@ -296,6 +292,14 @@ namespace StockAnalysis
 						pointsInRange.Add(stockDataPoint);
 
 			return pointsInRange;
+		}
+
+		public List<StockDataPoint> GetStockDataPoints(/* DateTime start, DateTime end, int maxPoints */)
+		{
+			List<StockDataPoint> result = new List<StockDataPoint>();
+			lock (stockDataPointsLock)
+				result.AddRange(StockDataPoints);
+			return result;
 		}
 	}
 }
