@@ -14,10 +14,7 @@ namespace StockAnalysis
 	/// </summary>
 	public partial class MainWindow : Window
 	{
-		static double chartHeightPixels = 500; // TODO: Let's not hard-code this.
-		static double chartWidthPixels = 1900; // TODO: Let's not hard-code this.
-
-		ChartTranslator chartTranslator = new ChartTranslator(chartWidthPixels, chartHeightPixels);
+		ChartTranslator chartTranslator = new ChartTranslator();
 
 
 		BittrexClient bittrexClient = new BittrexClient();
@@ -30,16 +27,20 @@ namespace StockAnalysis
 		public MainWindow()
 		{
 			InitializeComponent();
-			string symbol = "ETH";
-			bitcoinTicker = bittrexClient.GetTicker($"{symbol}-USDT");
+			SubscribeToTickerUpdates("BTC", "USDT");
+
+			tickGraph.SetChartTranslator(chartTranslator);
+		}
+
+		private void SubscribeToTickerUpdates(string symbol, string quoteCurrency)
+		{
+			bitcoinTicker = bittrexClient.GetTicker($"{symbol}-{quoteCurrency}");
 			tbStockPrice.Text = $"{symbol}: ${bitcoinTicker.Data.LastTradeRate}";
-			
-			bittrexSocketClient.SubscribeToSymbolTickerUpdatesAsync($"{symbol}-USDT", data =>
+
+			bittrexSocketClient.SubscribeToSymbolTickerUpdatesAsync($"{symbol}-{quoteCurrency}", data =>
 			{
 				UpdateLastPrice(data);
 			});
-
-			tickGraph.SetChartTranslator(chartTranslator);
 		}
 
 		void UpdateLastPrice(BittrexTick data)
@@ -47,6 +48,7 @@ namespace StockAnalysis
 			CustomTick ourData = new CustomTick(data);
 			chartTranslator.AddStockPosition(ourData);
 
+			// Dispatcher.Invoke ??? Threading ??? Forces the nested code to execute on the main UI thread
 			Dispatcher.Invoke(() =>
 			{
 				tickGraph.DrawGraph();
@@ -63,21 +65,51 @@ namespace StockAnalysis
 		{
 			if (Selection.Exists)
 			{
+				FrmTestGenerator frmTestGenerator = new FrmTestGenerator();
+				frmTestGenerator.Show();
+				ChartTranslator selectionChartTranslator = new ChartTranslator();
 				List<StockDataPoint> selectedPoints = chartTranslator.GetPointsInRange(Selection.Start, Selection.End);
 
-				string fullPathToFile = Folders.GetTestFilePath("Test3.json");
+				selectionChartTranslator.SetStockDataPoints(selectedPoints);
+				frmTestGenerator.tickGraph.SetChartTranslator(selectionChartTranslator);
+				frmTestGenerator.tickGraph.DrawGraph();
 
-				selectedPoints.Save(fullPathToFile);
+				//
 
-				List<StockDataPoint> loadedPoints = StockDataPoint.Load(fullPathToFile);
+				//string fullPathToFile = Folders.GetTestFilePath("Test3.json");
 
-				if (selectedPoints.Matches(loadedPoints))
-				{
-					Title = "It worked!";
-				}
-				else
-					Title = "Failure!";
+				//selectedPoints.Save(fullPathToFile);
+
+				//List<StockDataPoint> loadedPoints = StockDataPoint.Load(fullPathToFile);
+
+				//if (selectedPoints.Matches(loadedPoints))
+				//{
+				//	Title = "It worked!";
+				//}
+				//else
+				//	Title = "Failure!";
 			}
+		}
+
+		private void Window_SizeChanged(object sender, SizeChangedEventArgs e)
+		{
+			double newWidth = e.NewSize.Width - 20;
+			if (newWidth < 100)
+				newWidth = 100;
+
+			tickGraph.Width = newWidth;
+			double newHeight = e.NewSize.Height - spContainer.ActualHeight - 50;
+			if (newHeight < 100)
+				newHeight = 100;
+
+			tickGraph.Height = newHeight;
+		}
+
+		private void btnGo_Click(object sender, RoutedEventArgs e)
+		{
+			bittrexSocketClient.UnsubscribeAll();
+			SubscribeToTickerUpdates($"{tbxCurrency.Text}", $"{tbxQuoteCurrency.Text}");
+			chartTranslator.Clear();
 		}
 	}
 }

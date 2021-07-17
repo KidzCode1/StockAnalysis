@@ -10,16 +10,12 @@ namespace BotTraderCore
 		internal object stockDataPointsLock = new object();
 		List<StockDataPoint> stockDataPoints = new List<StockDataPoint>();
 
-		public ChartTranslator(double chartWidthPixels, double chartHeightPixels)
+		public ChartTranslator()
 		{
-			this.chartWidthPixels = chartWidthPixels;
-			this.chartHeightPixels = chartHeightPixels;
 		}
 
 		decimal high = 37000;
 		decimal low = 35000;
-		public readonly double chartHeightPixels;
-		public readonly double chartWidthPixels;
 		DateTime start;
 		DateTime end;
 
@@ -61,7 +57,7 @@ namespace BotTraderCore
 			}
 		}
 
-		public double GetStockPositionX(DateTime time)
+		public double GetStockPositionX(DateTime time, double chartWidthPixels)
 		{
 			TimeSpan distanceToPoint = time - start;
 			TimeSpan totalSpanAcross = end - start;
@@ -74,7 +70,7 @@ namespace BotTraderCore
 			return percentAcross * chartWidthPixels;
 		}
 
-		public DateTime GetTime(double x)
+		public DateTime GetTime(double x, double chartWidthPixels)
 		{
 			TimeSpan totalSpanAcross = end - start;
 			double totalSecondsAcross = totalSpanAcross.TotalSeconds;
@@ -84,7 +80,7 @@ namespace BotTraderCore
 			return start + TimeSpan.FromSeconds(secondsToPoint);
 		}
 
-		public DateTime GetTimeFromX(double xPos)
+		public DateTime GetTimeFromX(double xPos, double chartWidthPixels)
 		{
 			if (xPos < 0)
 				return start;
@@ -99,7 +95,7 @@ namespace BotTraderCore
 			return start + TimeSpan.FromSeconds(timeAcrossSeconds);
 		}
 
-		public double GetStockPositionY(decimal lastTradeRate)
+		public double GetStockPositionY(decimal lastTradeRate, double chartHeightPixels)
 		{
 			// Make sure the text is changed on the UI thread!
 			decimal amountAboveBottom = lastTradeRate - low;
@@ -247,14 +243,19 @@ namespace BotTraderCore
 			return closestDataPoint;
 		}
 
-		public List<PointXY> GetMovingAverages(int timeSpanSeconds)
+		public List<PointXY> GetMovingAverages(int timeSpanSeconds, double chartWidthPixels, double chartHeightPixels)
 		{
 			DateTime currentTime = DateTime.MinValue;
 			currentTime = start;
 			TimeSpan timeAcross = end - start;
 			double totalSecondsAcross = timeAcross.TotalSeconds;
 			const int numberOfDataPoints = 200;
+
 			List<PointXY> points = new List<PointXY>();
+
+			if (start == DateTime.MinValue)
+				return points;
+
 			double secondsPerDataPoint = totalSecondsAcross / numberOfDataPoints;
 			for (int i = 0; i < numberOfDataPoints; i++)
 			{
@@ -263,8 +264,8 @@ namespace BotTraderCore
 				decimal averagePrice = GetAveragePrice(dataPointsInRange);
 				if (averagePrice == decimal.MinValue)
 					continue;
-				double stockPositionX = GetStockPositionX(timeAtDataPoint);
-				double stockPositionY = GetStockPositionY(averagePrice);
+				double stockPositionX = GetStockPositionX(timeAtDataPoint, chartWidthPixels);
+				double stockPositionY = GetStockPositionY(averagePrice, chartHeightPixels);
 				PointXY point = new PointXY(stockPositionX, stockPositionY);
 				points.Add(point);
 			}
@@ -300,6 +301,23 @@ namespace BotTraderCore
 			lock (stockDataPointsLock)
 				result.AddRange(StockDataPoints);
 			return result;
+		}
+
+		public void SetStockDataPoints(List<StockDataPoint> points)
+		{
+			if (points.Count == 0)
+				return;
+
+			lock (stockDataPointsLock)
+				StockDataPoints.AddRange(points);
+			start = points[0].Time;
+			end = points[points.Count - 1].Time;
+			CalculateBounds();
+		}
+		public void Clear()
+		{
+			lock (stockDataPointsLock)
+				StockDataPoints.Clear();
 		}
 	}
 }

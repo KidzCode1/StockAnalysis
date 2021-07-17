@@ -5,13 +5,31 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:StockAnalysis"
         mc:Ignorable="d"
-        Title="MainWindow" Height="900" Width="1900" Closing="Window_Closing">
+        Title="MainWindow" Height="900" Width="1900" Closing="Window_Closing" SizeChanged="Window_SizeChanged">
     <StackPanel Orientation="Vertical">
-        <TextBlock x:Name="tbStockPrice" Text="No stock price yet!!!" Width="Auto" Height="Auto" FontSize="40"/>
-        <Button x:Name="btnTestSelection" Click="btnTestSelection_Click" MaxWidth="75">
-            Test Selection
-        </Button>
-        <local:TickGraph x:Name="tickGraph" Height="700" Width="1920">
+        <StackPanel x:Name="spContainer" Orientation="Vertical">
+            <TextBlock x:Name="tbStockPrice" Text="No stock price yet!!!" Width="Auto" Height="Auto" FontSize="40"/>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="Currency to Watch:" Width="Auto" Height="Auto" VerticalAlignment="Center"/>
+                <TextBox x:Name="tbxCurrency" VerticalAlignment="Center">
+                    BTC
+                </TextBox>
+                <TextBlock Text="Quote Currency:" Width="Auto" Height="Auto" VerticalAlignment="Center" Margin="20, 0, 0, 0"/>
+                <TextBox x:Name="tbxQuoteCurrency" VerticalAlignment="Center">
+                    USDT
+                </TextBox>
+                <Button x:Name="btnGo" Padding="8" Margin="20, 0, 0, 0" Click="btnGo_Click">
+                	Go!!!
+                </Button>
+            </StackPanel>
+            <Button x:Name="btnTestSelection" Click="btnTestSelection_Click" MaxWidth="105" Content="Test Selection">
+                
+            </Button>
+            <CheckBox IsChecked="{Binding ElementName=tickGraph, Path=ShowAnalysis}" Content="Show Analysis">
+                
+            </CheckBox>
+        </StackPanel>
+        <local:TickGraph x:Name="tickGraph" Height="700" Width="1920" ShowAnalysis="True">
             
         </local:TickGraph>
     </StackPanel>

@@ -24,8 +24,21 @@ namespace StockAnalysis
 	{
 		Point lastMousePosition;
 
+		public static readonly DependencyProperty ShowAnalysisProperty = DependencyProperty.Register("ShowAnalysis", typeof(bool), typeof(TickGraph), new FrameworkPropertyMetadata(false, new PropertyChangedCallback(OnShowAnalysisChanged)));
+		
+		
+		public bool ShowAnalysis
+		{
+			// IMPORTANT: To maintain parity between setting a property in XAML and procedural code, do not touch the getter and setter inside this dependency property!
+			get => (bool)GetValue(ShowAnalysisProperty);
+			set => SetValue(ShowAnalysisProperty, value);
+		}
+
+
 		const double INT_DotDiameter = 6;
 		const double INT_DotRadius = INT_DotDiameter / 2;
+		double chartHeightPixels;
+		double chartWidthPixels;
 
 		ChartTranslator chartTranslator;
 		public TickGraph()
@@ -33,6 +46,23 @@ namespace StockAnalysis
 			InitializeComponent();
 			HookEvents();
 		}
+
+		private static void OnShowAnalysisChanged(DependencyObject o, DependencyPropertyChangedEventArgs e)
+		{
+			TickGraph tickGraph = o as TickGraph;
+			if (tickGraph != null)
+				tickGraph.OnShowAnalysisChanged((bool)e.OldValue, (bool)e.NewValue);
+		}
+
+		protected virtual void OnShowAnalysisChanged(bool oldValue, bool newValue)
+		{
+			if (ShowAnalysis)
+				cvsAnalysis.Visibility = Visibility.Visible;
+			else
+				cvsAnalysis.Visibility = Visibility.Hidden;
+			DrawGraph();
+		}
+
 		public void Clear()
 		{
 			cvsMain.Children.Clear();
@@ -55,7 +85,7 @@ namespace StockAnalysis
 
 		private bool OnLeftSide(double x)
 		{
-			return x < chartTranslator.chartWidthPixels / 2;
+			return x < chartWidthPixels / 2;
 		}
 
 		double GetX(UIElement uIElement)
@@ -161,13 +191,15 @@ namespace StockAnalysis
 
 		private void AddDashedLine(Point position)
 		{
-			DateTime time = chartTranslator.GetTime(position.X);
+			if (chartTranslator == null)
+				return;
+			DateTime time = chartTranslator.GetTime(position.X, chartWidthPixels);
 			TextBlock timeTextBlock = new TextBlock();
 			timeTextBlock.Text = time.ToString("dd MMM yyyy - hh:mm:ss.ff");
 
 			AddAdornment(timeTextBlock);
 
-			if (position.X > chartTranslator.chartWidthPixels / 2)
+			if (position.X > chartWidthPixels / 2)
 			{
 				Size size = MeasureString(timeTextBlock);
 				// Right-align this.
@@ -177,7 +209,7 @@ namespace StockAnalysis
 				Canvas.SetLeft(timeTextBlock, position.X + 5);
 
 
-			Line line = CreateLine(position.X, 0, position.X, cvsAdornments.Height);
+			Line line = CreateLine(position.X, 0, position.X, chartHeightPixels);
 			line.IsHitTestVisible = false;
 			line.Stroke = new SolidColorBrush(Color.FromArgb(200, 115, 115, 115));
 			line.StrokeDashArray.Add(5);
@@ -217,11 +249,14 @@ namespace StockAnalysis
 
 			Clear();
 
+			if (chartTranslator == null)
+				return;
+
 			List<StockDataPoint> stockDataPoints = chartTranslator.GetStockDataPoints();
 			foreach (StockDataPoint stockDataPoint in stockDataPoints)
 			{
-				double x = chartTranslator.GetStockPositionX(stockDataPoint.Time);
-				double y = chartTranslator.GetStockPositionY(stockDataPoint.Tick.LastTradePrice);
+				double x = chartTranslator.GetStockPositionX(stockDataPoint.Time, chartWidthPixels);
+				double y = chartTranslator.GetStockPositionY(stockDataPoint.Tick.LastTradePrice, chartHeightPixels);
 				AddDot(lastY, x, y, stockDataPoint);
 
 				if (alreadyDrawnAtLeastOnePoint)
@@ -250,13 +285,17 @@ namespace StockAnalysis
 			cvsSelection.Children.Clear();
 			if (!Selection.Exists)
 				return;
+
+			if (chartTranslator == null)
+				return;
+
 			Rectangle selectionRect = new Rectangle();
 			selectionRect.Fill = new SolidColorBrush(Color.FromArgb(73, 54, 127, 255));
 			Canvas.SetTop(selectionRect, 0);
 			selectionRect.Height = cvsSelection.ActualHeight;
 
-			double leftSide = chartTranslator.GetStockPositionX(Selection.Start);  // 750
-			double rightSide = chartTranslator.GetStockPositionX(Selection.End);   // 1100
+			double leftSide = chartTranslator.GetStockPositionX(Selection.Start, chartWidthPixels);  // 750
+			double rightSide = chartTranslator.GetStockPositionX(Selection.End, chartWidthPixels);   // 1100
 
 			Canvas.SetLeft(selectionRect, leftSide);
 
@@ -266,15 +305,21 @@ namespace StockAnalysis
 		}
 		private void DrawAnalysisCharts()
 		{
+			if (!ShowAnalysis)
+				return;
+
 			cvsAnalysis.Children.Clear();
+
+			if (chartTranslator == null)
+				return;
 
 			//chartTranslator.AddMovingAverage(20, cvsAnalysis, new SolidColorBrush(Color.FromArgb(127, 27, 0, 163)));
 			//chartTranslator.AddMovingAverage(200, cvsAnalysis, new SolidColorBrush(Color.FromArgb(127, 0, 178, 33)));
 
-			List<PointXY> smallMovingAverage = chartTranslator.GetMovingAverages(20);
+			List<PointXY> smallMovingAverage = chartTranslator.GetMovingAverages(20, chartWidthPixels, chartHeightPixels);
 			ChartPoints(cvsAnalysis, smallMovingAverage, new SolidColorBrush(Color.FromArgb(127, 27, 0, 163)), 4);
 
-			List<PointXY> largerMovingAverage = chartTranslator.GetMovingAverages(100);
+			List<PointXY> largerMovingAverage = chartTranslator.GetMovingAverages(100, chartWidthPixels, chartHeightPixels);
 			ChartPoints(cvsAnalysis, largerMovingAverage, new SolidColorBrush(Color.FromArgb(127, 34, 171, 0)), 8);
 
 			//chartTranslator.AddMovingAverage(5, cvsMain, new SolidColorBrush(Color.FromArgb(127, 0, 255, 47)));
@@ -291,8 +336,10 @@ namespace StockAnalysis
 		{
 			if (Selection.Mode == SelectionModes.DraggingToSelect)
 			{
+				if (chartTranslator == null)
+					return;
 				Point position = e.GetPosition(cvsSelection);
-				Selection.Cursor = chartTranslator.GetTimeFromX(position.X);
+				Selection.Cursor = chartTranslator.GetTimeFromX(position.X, chartWidthPixels);
 				Selection.Changing();
 			}
 		}
@@ -358,7 +405,10 @@ namespace StockAnalysis
 
 			AddDashedLine(position);
 
-			DateTime mouseTime = chartTranslator.GetTimeFromX(position.X);
+			if (chartTranslator == null)
+				return;
+
+			DateTime mouseTime = chartTranslator.GetTimeFromX(position.X, chartWidthPixels);
 			Ellipse closestEllipse = GetClosestEllipse(position.X, position.Y);
 			if (closestEllipse != null)
 			{
@@ -380,11 +430,14 @@ namespace StockAnalysis
 		}
 		public void HandleMouseDown(MouseButtonEventArgs e)
 		{
+			if (chartTranslator == null)
+				return;
+
 			Point position = e.GetPosition(cvsSelection);
 			if (Selection.IsInBounds(position.X, position.Y))
 			{
 				Selection.Mode = SelectionModes.DraggingToSelect;
-				Selection.Anchor = chartTranslator.GetTimeFromX(position.X);
+				Selection.Anchor = chartTranslator.GetTimeFromX(position.X, chartWidthPixels);
 				cvsSelection.CaptureMouse();
 			}
 		}
@@ -407,11 +460,14 @@ namespace StockAnalysis
 
 		public void HandleMouseUp(MouseButtonEventArgs e)
 		{
+			if (chartTranslator == null)
+				return;
+
 			if (Selection.Mode == SelectionModes.DraggingToSelect)
 			{
 				cvsSelection.ReleaseMouseCapture();
 				Point position = e.GetPosition(cvsSelection);
-				Selection.Cursor = chartTranslator.GetTimeFromX(position.X);
+				Selection.Cursor = chartTranslator.GetTimeFromX(position.X, chartWidthPixels);
 				Selection.Mode = SelectionModes.Normal;
 				Selection.Changed();
 			}
@@ -430,6 +486,29 @@ namespace StockAnalysis
 		private void UserControl_PreviewMouseUp(object sender, MouseButtonEventArgs e)
 		{
 			HandleMouseUp(e);
+		}
+
+		void SetSize(FrameworkElement element)
+		{
+			element.Width = chartWidthPixels;
+			element.Height = chartHeightPixels;
+		}
+
+		private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)
+		{
+			chartWidthPixels = e.NewSize.Width;
+			chartHeightPixels = e.NewSize.Height;
+
+			// Tip: Ctrl+K, Ctrl+D to format the document!
+			SetSize(cvsBackground);
+			SetSize(rctBackground);
+			SetSize(cvsMain);
+			SetSize(cvsAdornments);
+			SetSize(cvsSelection);
+			SetSize(cvsAnalysis);
+			SetSize(cvsHints);
+			SetSize(grdContainer);
+			DrawGraph();
 		}
 	}
 }

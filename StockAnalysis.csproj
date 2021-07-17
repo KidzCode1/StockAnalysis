@@ -145,11 +145,18 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="FrmTestGenerator.xaml.cs">
+      <DependentUpon>FrmTestGenerator.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Selection.cs" />
     <Compile Include="SelectionModes.cs" />
     <Compile Include="TickGraph.xaml.cs">
       <DependentUpon>TickGraph.xaml</DependentUpon>
     </Compile>
+    <Page Include="FrmTestGenerator.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
