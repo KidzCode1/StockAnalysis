@@ -22,7 +22,14 @@ namespace StockAnalysis
 	/// </summary>
 	public partial class TickGraph : UserControl
 	{
+		public Selection Selection { get; set; } = new Selection();
+
 		Point lastMousePosition;
+
+		internal void SelectAll()
+		{
+			Selection.Set(chartTranslator.Start, chartTranslator.End);
+		}
 
 		public static readonly DependencyProperty ShowAnalysisProperty = DependencyProperty.Register("ShowAnalysis", typeof(bool), typeof(TickGraph), new FrameworkPropertyMetadata(false, new PropertyChangedCallback(OnShowAnalysisChanged)));
 		
@@ -280,6 +287,7 @@ namespace StockAnalysis
 			UpdateSelection();
 			DrawAnalysisCharts();
 		}
+
 		void UpdateSelection()
 		{
 			cvsSelection.Children.Clear();
@@ -339,8 +347,7 @@ namespace StockAnalysis
 				if (chartTranslator == null)
 					return;
 				Point position = e.GetPosition(cvsSelection);
-				Selection.Cursor = chartTranslator.GetTimeFromX(position.X, chartWidthPixels);
-				Selection.Changing();
+				Selection.SetChangingCursor(chartTranslator.GetTimeFromX(position.X, chartWidthPixels));
 			}
 		}
 
@@ -430,6 +437,8 @@ namespace StockAnalysis
 		}
 		public void HandleMouseDown(MouseButtonEventArgs e)
 		{
+			if (e.ChangedButton == MouseButton.Right && e.ButtonState == MouseButtonState.Pressed)
+				return;
 			if (chartTranslator == null)
 				return;
 
@@ -467,9 +476,7 @@ namespace StockAnalysis
 			{
 				cvsSelection.ReleaseMouseCapture();
 				Point position = e.GetPosition(cvsSelection);
-				Selection.Cursor = chartTranslator.GetTimeFromX(position.X, chartWidthPixels);
-				Selection.Mode = SelectionModes.Normal;
-				Selection.Changed();
+				Selection.SetFinalCursor(chartTranslator.GetTimeFromX(position.X, chartWidthPixels));
 			}
 		}
 

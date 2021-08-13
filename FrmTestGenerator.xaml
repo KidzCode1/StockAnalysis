@@ -6,13 +6,26 @@
         xmlns:local="clr-namespace:StockAnalysis"
         mc:Ignorable="d"
         Title="FrmTestGenerator" Height="800" Width="800">
+    <Window.Resources>
+        <ContextMenu x:Key="AddVariableMenu" ContextMenuOpening="ContextMenu_ContextMenuOpening" Opened="ContextMenu_Opened">
+            <MenuItem Header="New Variable:" IsEnabled="False" />
+            <MenuItem x:Name="miTime" Header="Time" Click="miTime_Click"/>
+            <MenuItem x:Name="miPrice" Header="Price" Click="miPrice_Click"/>
+            <MenuItem x:Name="miDataPoint" Header="Data Point" Click="miDataPoint_Click"/>
+            <MenuItem x:Name="miDataRange" Header="Data Range" Click="miDataRange_Click"/>
+        </ContextMenu>
+    </Window.Resources>
     <StackPanel Orientation="Vertical">
-        <local:TickGraph x:Name="tickGraph" Height="600">
-            
+        <local:TickGraph x:Name="tickGraph" Height="600" ContextMenu="{StaticResource AddVariableMenu}">
+      
         </local:TickGraph>
+        
         <StackPanel Orientation="Horizontal">
         	<Button x:Name="btnGenerateTest" Width="250" Height="90" FontSize="35">
          	    Generate Test!
+            </Button>
+            <Button x:Name="btnSelectAll" Width="180" FontSize="35" Margin="30, 0, 0, 0" Click="btnSelectAll_Click">
+                Select All
             </Button>
         </StackPanel>
     </StackPanel>

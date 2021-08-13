@@ -16,7 +16,6 @@ namespace StockAnalysis
 	{
 		ChartTranslator chartTranslator = new ChartTranslator();
 
-
 		BittrexClient bittrexClient = new BittrexClient();
 		BittrexSocketClient bittrexSocketClient = new BittrexSocketClient();
 		WebCallResult<BittrexTick> bitcoinTicker;
@@ -35,7 +34,16 @@ namespace StockAnalysis
 		private void SubscribeToTickerUpdates(string symbol, string quoteCurrency)
 		{
 			bitcoinTicker = bittrexClient.GetTicker($"{symbol}-{quoteCurrency}");
-			tbStockPrice.Text = $"{symbol}: ${bitcoinTicker.Data.LastTradeRate}";
+			if (bitcoinTicker.Data == null)
+			{
+				tbStockPrice.Text = $"{symbol}: Data is null!!!";
+				tbStockPrice.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 194, 194));
+			}
+			else
+			{
+				tbStockPrice.Text = $"{symbol}: ${bitcoinTicker.Data.LastTradeRate}";
+				tbStockPrice.Background = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Colors.White);
+			}
 
 			bittrexSocketClient.SubscribeToSymbolTickerUpdatesAsync($"{symbol}-{quoteCurrency}", data =>
 			{
@@ -63,18 +71,16 @@ namespace StockAnalysis
 
 		private void btnTestSelection_Click(object sender, RoutedEventArgs e)
 		{
-			if (Selection.Exists)
+			if (tickGraph.Selection.Exists)
 			{
 				FrmTestGenerator frmTestGenerator = new FrmTestGenerator();
 				frmTestGenerator.Show();
 				ChartTranslator selectionChartTranslator = new ChartTranslator();
-				List<StockDataPoint> selectedPoints = chartTranslator.GetPointsInRange(Selection.Start, Selection.End);
+				List<StockDataPoint> selectedPoints = chartTranslator.GetPointsInRange(tickGraph.Selection.Start, tickGraph.Selection.End);
 
 				selectionChartTranslator.SetStockDataPoints(selectedPoints);
 				frmTestGenerator.tickGraph.SetChartTranslator(selectionChartTranslator);
 				frmTestGenerator.tickGraph.DrawGraph();
-
-				//
 
 				//string fullPathToFile = Folders.GetTestFilePath("Test3.json");
 

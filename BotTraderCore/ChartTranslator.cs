@@ -20,6 +20,8 @@ namespace BotTraderCore
 		DateTime end;
 
 		public List<StockDataPoint> StockDataPoints { get => stockDataPoints; }
+		public DateTime Start => start;
+		public DateTime End => end;
 
 		void CalculateBounds()
 		{
@@ -114,26 +116,31 @@ namespace BotTraderCore
 			StockDataPoint stockDataPoint = new StockDataPoint(data);
 			if (stockDataPoints.Count >= 2)
 			{
-				int lastIndex = stockDataPoints.Count - 1;
-				StockDataPoint lastPoint = stockDataPoints[lastIndex];
-				StockDataPoint secondToLastPoint = stockDataPoints[lastIndex - 1];
-				if (lastPoint.Tick.LastTradePrice == secondToLastPoint.Tick.LastTradePrice)
-				{
-					if (lastPoint.Tick.LastTradePrice == data.LastTradePrice)
-					{
-						// Last two points, plus this one are the same. We can remove the middle point.
-						lock (stockDataPointsLock)
-						{
-							// Since we are removing data points for efficiency, we have to weigh down the new point we are adding so our SMA still works. 
-							stockDataPoint.Weight += lastPoint.Weight;
-							stockDataPoints.RemoveAt(lastIndex);
-						}
-					}
-				}
+				//RemoveMatchingDataPoints(data, stockDataPoint);
 			}
 			stockDataPoints.Add(stockDataPoint);
 			CalculateBounds();
 			return stockDataPoint;
+		}
+
+		private void RemoveMatchingDataPoints(CustomTick data, StockDataPoint stockDataPoint)
+		{
+			int lastIndex = stockDataPoints.Count - 1;
+			StockDataPoint lastPoint = stockDataPoints[lastIndex];
+			StockDataPoint secondToLastPoint = stockDataPoints[lastIndex - 1];
+			if (lastPoint.Tick.LastTradePrice == secondToLastPoint.Tick.LastTradePrice)
+			{
+				if (lastPoint.Tick.LastTradePrice == data.LastTradePrice)
+				{
+					// Last two points, plus this one are the same. We can remove the middle point.
+					lock (stockDataPointsLock)
+					{
+						// Since we are removing data points for efficiency, we have to weigh down the new point we are adding so our SMA still works. 
+						stockDataPoint.Weight += lastPoint.Weight;
+						stockDataPoints.RemoveAt(lastIndex);
+					}
+				}
+			}
 		}
 
 		//public void AddMovingAverage(double spanDurationSeconds, Canvas canvas, Brush lineColor)
