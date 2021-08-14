@@ -145,18 +145,6 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Compile Include="FrmTestGenerator.xaml.cs">
-      <DependentUpon>FrmTestGenerator.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="Selection.cs" />
-    <Compile Include="SelectionModes.cs" />
-    <Compile Include="TickGraph.xaml.cs">
-      <DependentUpon>TickGraph.xaml</DependentUpon>
-    </Compile>
-    <Page Include="FrmTestGenerator.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
     <Page Include="MainWindow.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
@@ -169,10 +157,6 @@
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
     </Compile>
-    <Page Include="TickGraph.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs">
@@ -205,6 +189,14 @@
     <ProjectReference Include="BotTraderCore\BotTraderCore.csproj">
       <Project>{c258169e-7c6f-4e1a-bd39-34d8003722de}</Project>
       <Name>BotTraderCore</Name>
+    </ProjectReference>
+    <ProjectReference Include="TestCaseGeneratorUI\TestCaseGeneratorUI.csproj">
+      <Project>{4f0144b5-8bf1-439d-a2ab-55b712b3a11c}</Project>
+      <Name>TestCaseGeneratorUI</Name>
+    </ProjectReference>
+    <ProjectReference Include="TickGraphCore\TickGraphCore.csproj">
+      <Project>{d9fe6e27-4c55-474e-aa78-7ac7f6168a46}</Project>
+      <Name>TickGraphCore</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

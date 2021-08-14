@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace StockAnalysis
+namespace TickGraphCore
 {
 	public class Selection
 	{

@@ -15,7 +15,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
 using System.Windows.Shapes;
 
-namespace StockAnalysis
+namespace TickGraphCore
 {
 	/// <summary>
 	/// Interaction logic for TickGraph.xaml
@@ -26,7 +26,7 @@ namespace StockAnalysis
 
 		Point lastMousePosition;
 
-		internal void SelectAll()
+		public void SelectAll()
 		{
 			Selection.Set(chartTranslator.Start, chartTranslator.End);
 		}

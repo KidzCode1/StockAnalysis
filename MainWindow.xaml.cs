@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
+using TestCaseGeneratorUI;
 
 namespace StockAnalysis
 {
@@ -79,8 +80,7 @@ namespace StockAnalysis
 				List<StockDataPoint> selectedPoints = chartTranslator.GetPointsInRange(tickGraph.Selection.Start, tickGraph.Selection.End);
 
 				selectionChartTranslator.SetStockDataPoints(selectedPoints);
-				frmTestGenerator.tickGraph.SetChartTranslator(selectionChartTranslator);
-				frmTestGenerator.tickGraph.DrawGraph();
+				frmTestGenerator.SetChartTranslator(selectionChartTranslator);
 
 				//string fullPathToFile = Folders.GetTestFilePath("Test3.json");
 

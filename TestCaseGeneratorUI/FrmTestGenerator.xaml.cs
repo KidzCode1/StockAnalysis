@@ -1,4 +1,5 @@
 ﻿using System;
+using BotTraderCore;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,8 +12,9 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using TestCaseGeneratorCore;
 
-namespace StockAnalysis
+namespace TestCaseGeneratorUI
 {
 	/// <summary>
 	/// Interaction logic for FrmTestGenerator.xaml
@@ -41,7 +43,7 @@ namespace StockAnalysis
 
 		private void miTime_Click(object sender, RoutedEventArgs e)
 		{
-
+			//AddVariable(new TestVariableTime());
 		}
 
 		private void miPrice_Click(object sender, RoutedEventArgs e)
@@ -89,6 +91,12 @@ namespace StockAnalysis
 				miTime.Visibility = Visibility.Visible;
 				miPrice.Visibility = Visibility.Visible;
 			}
+		}
+
+		public void SetChartTranslator(ChartTranslator chartTranslator)
+		{
+			tickGraph.SetChartTranslator(chartTranslator);
+			tickGraph.DrawGraph();
 		}
 	}
 }

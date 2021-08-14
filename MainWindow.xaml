@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:StockAnalysis"
+        xmlns:tickGraphCore="clr-namespace:TickGraphCore;assembly=TickGraphCore"
         mc:Ignorable="d"
         Title="MainWindow" Height="900" Width="1900" Closing="Window_Closing" SizeChanged="Window_SizeChanged">
     <StackPanel Orientation="Vertical">
@@ -29,8 +29,8 @@
                 
             </CheckBox>
         </StackPanel>
-        <local:TickGraph x:Name="tickGraph" Height="700" Width="1920" ShowAnalysis="True">
+        <tickGraphCore:TickGraph x:Name="tickGraph" Height="700" Width="1920" ShowAnalysis="True">
             
-        </local:TickGraph>
+        </tickGraphCore:TickGraph>
     </StackPanel>
 </Window>
