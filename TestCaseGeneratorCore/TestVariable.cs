@@ -10,9 +10,9 @@ namespace TestCaseGeneratorCore
 	{
 		public abstract void GenerateInitialization(StringBuilder code);
 		public string Name { get; set; }
-		public TestVariable()
+		public TestVariable(string name)
 		{
-			
+			Name = name;
 		}
 	}
 }

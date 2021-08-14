@@ -16,12 +16,19 @@
         </ContextMenu>
     </Window.Resources>
     <StackPanel Orientation="Vertical">
-        <tickGraphCore:TickGraph x:Name="tickGraph" Height="600" ContextMenu="{StaticResource AddVariableMenu}">
-      
-        </tickGraphCore:TickGraph>
+        <StackPanel Orientation="Horizontal">
+            <tickGraphCore:TickGraph x:Name="tickGraph" Height="600" ContextMenu="{StaticResource AddVariableMenu}">
+
+            </tickGraphCore:TickGraph>
+            <StackPanel Orientation="Vertical">
+            	<TextBlock Text="Variables:" Width="Auto" Height="Auto"/>
+                <ListBox x:Name="lstVariables" >
+                </ListBox>
+            </StackPanel>
+        </StackPanel>
         
         <StackPanel Orientation="Horizontal">
-        	<Button x:Name="btnGenerateTest" Width="250" Height="90" FontSize="35">
+        	<Button x:Name="btnGenerateTest" Width="250" Height="90" FontSize="35" Click="btnGenerateTest_Click">
          	    Generate Test!
             </Button>
             <Button x:Name="btnSelectAll" Width="180" FontSize="35" Margin="30, 0, 0, 0" Click="btnSelectAll_Click">

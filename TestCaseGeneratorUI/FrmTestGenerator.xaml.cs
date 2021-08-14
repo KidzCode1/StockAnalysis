@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using TestCaseGeneratorCore;
+using System.Collections.ObjectModel;
 
 namespace TestCaseGeneratorUI
 {
@@ -24,6 +25,7 @@ namespace TestCaseGeneratorUI
 		public FrmTestGenerator()
 		{
 			InitializeComponent();
+			lstVariables.ItemsSource = variables;
 		}
 
 		private void btnSelectAll_Click(object sender, RoutedEventArgs e)
@@ -41,9 +43,22 @@ namespace TestCaseGeneratorUI
 
 		}
 
+		ObservableCollection<TestVariable> variables = new ObservableCollection<TestVariable>();
+		void AddVariable(TestVariable testVariable)
+		{
+			variables.Add(testVariable);
+		}
+
+		int numVariablesCreated = 0;
+
+		string GetNewVariableName()
+		{
+			return "var" + numVariablesCreated++;
+		}
+
 		private void miTime_Click(object sender, RoutedEventArgs e)
 		{
-			//AddVariable(new TestVariableTime());
+			AddVariable(new TestVariableTime(GetNewVariableName(), tickGraph.GetTimeAtMouse()));
 		}
 
 		private void miPrice_Click(object sender, RoutedEventArgs e)
@@ -97,6 +112,19 @@ namespace TestCaseGeneratorUI
 		{
 			tickGraph.SetChartTranslator(chartTranslator);
 			tickGraph.DrawGraph();
+		}
+
+		private void btnGenerateTest_Click(object sender, RoutedEventArgs e)
+		{
+			StringBuilder code = new StringBuilder();
+			// TODO: Take a screen shot of the app!!!
+			// TODO: Save the data in chartTranslator!!!
+			// TODO: Build the start of the test case!!!
+			foreach (TestVariable testVariable in variables)
+			{
+				testVariable.GenerateInitialization(code);
+			}
+			// TODO: Build the end of the test case!!!
 		}
 	}
 }

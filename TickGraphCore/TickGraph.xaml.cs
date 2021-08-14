@@ -517,5 +517,10 @@ namespace TickGraphCore
 			SetSize(grdContainer);
 			DrawGraph();
 		}
+
+		public DateTime GetTimeAtMouse()
+		{
+			return chartTranslator.GetTimeFromX(lastMousePosition.X, chartWidthPixels);
+		}
 	}
 }
