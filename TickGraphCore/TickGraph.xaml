@@ -6,6 +6,19 @@
              xmlns:local="clr-namespace:TickGraphCore"
              mc:Ignorable="d" 
              d:DesignHeight="700" d:DesignWidth="600" Background="White" PreviewMouseDown="UserControl_PreviewMouseDown" PreviewMouseMove="UserControl_PreviewMouseMove" PreviewMouseUp="UserControl_PreviewMouseUp" SizeChanged="UserControl_SizeChanged">
+    <UserControl.Resources>
+        <Viewbox x:Key="iconTimePoint" Width="36" x:Shared="false" >
+            <Canvas Width="198" Height="213">
+                <Polygon Points="32.5,114 65.75,114 65.75,32.5 132.25,32.5 132.25,114 165.5,114 99,180.5" FillRule="EvenOdd" Fill="#FFA9D18E" Stroke="{x:Null}" />
+                <Canvas>
+                    <Canvas.Clip>
+                        <RectangleGeometry Rect="23,29,153,158" />
+                    </Canvas.Clip>
+                    <Polygon Points="32.5,114 65.75,114 65.75,32.5 132.25,32.5 132.25,114 165.5,114 99,180.5" FillRule="EvenOdd" Fill="{x:Null}" Stroke="#FF70AD47" StrokeThickness="8.3125" />
+                </Canvas>
+            </Canvas>
+        </Viewbox>
+    </UserControl.Resources>
     <Grid x:Name="grdContainer" Height="700" Width="600">
         <Canvas x:Name="cvsBackground" Height="700" Width="600">
             <!--This is so the preview mouse events get sent.--> 
@@ -14,7 +27,9 @@
         <Canvas x:Name="cvsMain" Height="700" Width="600">
             
         </Canvas>
-        <Canvas x:Name="cvsAdornments" Height="700" Width="600">
+        <Canvas x:Name="cvsCoreAdornments" Height="700" Width="600">
+        </Canvas>
+        <Canvas x:Name="cvsCustomAdornments" Height="700" Width="600">
         </Canvas>
         <Canvas x:Name="cvsSelection" Height="700" Width="600">
         </Canvas>

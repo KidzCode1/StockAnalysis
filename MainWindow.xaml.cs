@@ -77,9 +77,9 @@ namespace StockAnalysis
 				FrmTestGenerator frmTestGenerator = new FrmTestGenerator();
 				frmTestGenerator.Show();
 				ChartTranslator selectionChartTranslator = new ChartTranslator();
-				List<StockDataPoint> selectedPoints = chartTranslator.GetPointsInRange(tickGraph.Selection.Start, tickGraph.Selection.End);
+				TickRange tickRange = chartTranslator.GetPointsInRange(tickGraph.Selection.Start, tickGraph.Selection.End);
 
-				selectionChartTranslator.SetStockDataPoints(selectedPoints);
+				selectionChartTranslator.SetTickRange(tickRange);
 				frmTestGenerator.SetChartTranslator(selectionChartTranslator);
 
 				//string fullPathToFile = Folders.GetTestFilePath("Test3.json");

@@ -13,6 +13,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using TestCaseGeneratorCore;
+using TickGraphCore;
 using System.Collections.ObjectModel;
 
 namespace TestCaseGeneratorUI
@@ -44,9 +45,39 @@ namespace TestCaseGeneratorUI
 		}
 
 		ObservableCollection<TestVariable> variables = new ObservableCollection<TestVariable>();
+
+		List<CustomAdornment> customAdornments;
+
+		// Call this any time we change the variables...
+		void RebuildVariableAdornments()
+		{
+			if (variables.Count == 0)
+			{
+				customAdornments = null;
+				return;
+			}
+
+			foreach (TestVariable testVariable in variables)
+			{
+				CustomAdornment customAdornment = new CustomAdornment();
+				customAdornment.Key = testVariable.Key;
+				customAdornment.Time = testVariable.Time;
+				customAdornment.Price = testVariable.Price;
+				customAdornment.Size = testVariable.Size;
+				customAdornment.LeftOffset = testVariable.LeftOffset;
+				customAdornment.TopOffset = testVariable.TopOffset;
+
+				if (customAdornments == null)
+					customAdornments = new List<CustomAdornment>();
+				customAdornments.Add(customAdornment);
+			}
+		}
+
 		void AddVariable(TestVariable testVariable)
 		{
 			variables.Add(testVariable);
+			RebuildVariableAdornments();
+			DrawGraph();
 		}
 
 		int numVariablesCreated = 0;
@@ -111,7 +142,12 @@ namespace TestCaseGeneratorUI
 		public void SetChartTranslator(ChartTranslator chartTranslator)
 		{
 			tickGraph.SetChartTranslator(chartTranslator);
-			tickGraph.DrawGraph();
+			DrawGraph();
+		}
+
+		private void DrawGraph()
+		{
+			tickGraph.DrawGraph(customAdornments);
 		}
 
 		private void btnGenerateTest_Click(object sender, RoutedEventArgs e)

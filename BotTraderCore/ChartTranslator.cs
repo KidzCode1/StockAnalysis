@@ -61,6 +61,12 @@ namespace BotTraderCore
 
 		public double GetStockPositionX(DateTime time, double chartWidthPixels)
 		{
+			if (time == DateTime.MinValue)
+				return 0d;
+
+			if (time == DateTime.MaxValue)
+				return chartWidthPixels;
+
 			TimeSpan distanceToPoint = time - start;
 			TimeSpan totalSpanAcross = end - start;
 			double totalSecondsAcross = totalSpanAcross.TotalSeconds;
@@ -97,10 +103,15 @@ namespace BotTraderCore
 			return start + TimeSpan.FromSeconds(timeAcrossSeconds);
 		}
 
-		public double GetStockPositionY(decimal lastTradeRate, double chartHeightPixels)
+		public double GetStockPositionY(decimal price, double chartHeightPixels)
 		{
+			if (price == decimal.MinValue)
+				return chartHeightPixels;
+
+			if (price == decimal.MaxValue)
+				return 0;
 			// Make sure the text is changed on the UI thread!
-			decimal amountAboveBottom = lastTradeRate - low;
+			decimal amountAboveBottom = price - low;
 			decimal chartHeightDollars = high - low;
 
 			// ![](99A33C7E4008781D520BA988900A3B50.png;;;0.01945,0.01945)
@@ -267,8 +278,8 @@ namespace BotTraderCore
 			for (int i = 0; i < numberOfDataPoints; i++)
 			{
 				DateTime timeAtDataPoint = start + TimeSpan.FromSeconds(i * secondsPerDataPoint);
-				List<StockDataPoint> dataPointsInRange = GetPointsAroundTime(timeAtDataPoint, timeSpanSeconds);
-				decimal averagePrice = GetAveragePrice(dataPointsInRange);
+				TickRange tickRange = GetPointsAroundTime(timeAtDataPoint, timeSpanSeconds);
+				decimal averagePrice = GetAveragePrice(tickRange.DataPoints);
 				if (averagePrice == decimal.MinValue)
 					continue;
 				double stockPositionX = GetStockPositionX(timeAtDataPoint, chartWidthPixels);
@@ -279,7 +290,7 @@ namespace BotTraderCore
 			return points;
 		}
 
-		List<StockDataPoint> GetPointsAroundTime(DateTime timeCenterPoint, int timeSpanSeconds)
+		TickRange GetPointsAroundTime(DateTime timeCenterPoint, int timeSpanSeconds)
 		{
 			double halfTimeSpan = timeSpanSeconds / 2.0;
 			TimeSpan halfTimeSpanSeconds = TimeSpan.FromSeconds(halfTimeSpan);
@@ -289,20 +300,51 @@ namespace BotTraderCore
 			return GetPointsInRange(startRange, endRange);
 		}
 
-		public List<StockDataPoint> GetPointsInRange(DateTime start, DateTime end)
+		public TickRange GetPointsInRange(DateTime start, DateTime end)
 		{
-			List<StockDataPoint> pointsInRange = new List<StockDataPoint>();
+			TickRange tickRange = new TickRange()
+			{
+				Start = start,
+				End = end,
+				DataPoints = new List<StockDataPoint>(),
+			};
+
+			StockDataPoint lastDataPoint = null;
+			StockDataPoint lowestSoFar = null;
+			StockDataPoint highestSoFar = null;
+
 			lock (stockDataPointsLock)
 				foreach (StockDataPoint stockDataPoint in StockDataPoints)
 					if (stockDataPoint.Time > end)
-						return pointsInRange;
+						return tickRange;
 					else if (stockDataPoint.Time >= start)   // We can work with this data!
-						pointsInRange.Add(stockDataPoint);
+					{
+						if (lastDataPoint != null)  // We have just entered the start of the desired range.
+						{
+							tickRange.ValueBeforeRangeStarts = lastDataPoint;
+						}
+						tickRange.DataPoints.Add(stockDataPoint);
+						if (lowestSoFar == null)
+							lowestSoFar = stockDataPoint;
+						else if (stockDataPoint.Tick.LastTradePrice < lowestSoFar.Tick.LastTradePrice)
+							lowestSoFar = stockDataPoint;
+						if (highestSoFar == null)
+							highestSoFar = stockDataPoint;
+						else if (stockDataPoint.Tick.LastTradePrice > highestSoFar.Tick.LastTradePrice)
+							highestSoFar = stockDataPoint;
+					}
+					else
+					{
+						// stockDataPoint.Time comes before start
+						lastDataPoint = stockDataPoint;
+					}
 
-			return pointsInRange;
+			tickRange.Low = lowestSoFar;
+			tickRange.High = highestSoFar;
+			return tickRange;
 		}
 
-		public List<StockDataPoint> GetStockDataPoints(/* DateTime start, DateTime end, int maxPoints */)
+		public List<StockDataPoint> GetAllStockDataPoints()
 		{
 			List<StockDataPoint> result = new List<StockDataPoint>();
 			lock (stockDataPointsLock)
@@ -325,6 +367,19 @@ namespace BotTraderCore
 		{
 			lock (stockDataPointsLock)
 				StockDataPoints.Clear();
+		}
+
+		public void SetTickRange(TickRange tickRange)
+		{
+			if (tickRange.DataPoints.Count == 0)
+				return;
+
+			lock (stockDataPointsLock)
+				StockDataPoints.AddRange(tickRange.DataPoints);
+
+			CalculateBounds();
+			start = tickRange.Start;
+			end = tickRange.End;
 		}
 	}
 }

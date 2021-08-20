@@ -85,9 +85,14 @@ namespace TickGraphCore
 			cvsMain.Children.Insert(0, element);
 		}
 
-		public void AddAdornment(FrameworkElement element)
+		public void AddCoreAdornment(FrameworkElement element)
 		{
-			cvsAdornments.Children.Add(element);
+			cvsCoreAdornments.Children.Add(element);
+		}
+
+		public void AddCustomAdornment(FrameworkElement element)
+		{
+			cvsCustomAdornments.Children.Add(element);
 		}
 
 		private bool OnLeftSide(double x)
@@ -204,7 +209,7 @@ namespace TickGraphCore
 			TextBlock timeTextBlock = new TextBlock();
 			timeTextBlock.Text = time.ToString("dd MMM yyyy - hh:mm:ss.ff");
 
-			AddAdornment(timeTextBlock);
+			AddCoreAdornment(timeTextBlock);
 
 			if (position.X > chartWidthPixels / 2)
 			{
@@ -221,7 +226,7 @@ namespace TickGraphCore
 			line.Stroke = new SolidColorBrush(Color.FromArgb(200, 115, 115, 115));
 			line.StrokeDashArray.Add(5);
 			line.StrokeDashArray.Add(3);
-			cvsAdornments.Children.Add(line);
+			cvsCoreAdornments.Children.Add(line);
 		}
 		private Size MeasureString(TextBlock textBlock)
 		{
@@ -242,12 +247,40 @@ namespace TickGraphCore
 		{
 			this.chartTranslator = chartTranslator;
 		}
-		public void ClearAdornments()
+
+		public void ClearCoreAdornments()
 		{
-			cvsAdornments.Children.Clear();
+			cvsCoreAdornments.Children.Clear();
 		}
 
-		public void DrawGraph()
+		public void ClearCustomAdornments()
+		{
+			cvsCustomAdornments.Children.Clear();
+		}
+
+
+		void DrawCustomAdornments(List<CustomAdornment> customAdornments)
+		{
+			ClearCustomAdornments();
+			if (customAdornments == null)
+				return;
+
+			foreach (CustomAdornment customAdornment in customAdornments)
+			{
+				double size = customAdornment.Size;
+				Viewbox iconTimePoint = FindResource(customAdornment.Key) as Viewbox;
+				iconTimePoint.Width = size;
+				double left = chartTranslator.GetStockPositionX(customAdornment.Time, chartWidthPixels) + customAdornment.LeftOffset;
+				Canvas.SetLeft(iconTimePoint, left);
+
+				double top = chartTranslator.GetStockPositionY(customAdornment.Price, chartHeightPixels) + customAdornment.TopOffset;
+				Canvas.SetTop(iconTimePoint, top);
+				AddCustomAdornment(iconTimePoint);
+			}
+			// TODO: Do this!!!
+		}
+
+		public void DrawGraph(List<CustomAdornment> customAdornments = null)
 		{
 			double lastX = double.MinValue;
 			double lastY = double.MinValue;
@@ -259,7 +292,7 @@ namespace TickGraphCore
 			if (chartTranslator == null)
 				return;
 
-			List<StockDataPoint> stockDataPoints = chartTranslator.GetStockDataPoints();
+			List<StockDataPoint> stockDataPoints = chartTranslator.GetAllStockDataPoints();
 			foreach (StockDataPoint stockDataPoint in stockDataPoints)
 			{
 				double x = chartTranslator.GetStockPositionX(stockDataPoint.Time, chartWidthPixels);
@@ -286,6 +319,7 @@ namespace TickGraphCore
 
 			UpdateSelection();
 			DrawAnalysisCharts();
+			DrawCustomAdornments(customAdornments);
 		}
 
 		void UpdateSelection()
@@ -335,7 +369,7 @@ namespace TickGraphCore
 
 		public void HandleMouseMove(MouseEventArgs e)
 		{
-			lastMousePosition = e.GetPosition(cvsAdornments);
+			lastMousePosition = e.GetPosition(cvsCoreAdornments);
 			AddAdornments(lastMousePosition);
 			UpdateSelectionIfNeeded(e);
 		}
@@ -403,12 +437,12 @@ namespace TickGraphCore
 			ellipse.StrokeThickness = 2;
 			Canvas.SetLeft(ellipse, x - radius);
 			Canvas.SetTop(ellipse, y - radius);
-			AddAdornment(ellipse);
+			AddCoreAdornment(ellipse);
 		}
 
 		private void AddAdornments(Point position)
 		{
-			ClearAdornments();
+			ClearCoreAdornments();
 
 			AddDashedLine(position);
 
@@ -510,7 +544,8 @@ namespace TickGraphCore
 			SetSize(cvsBackground);
 			SetSize(rctBackground);
 			SetSize(cvsMain);
-			SetSize(cvsAdornments);
+			SetSize(cvsCoreAdornments);
+			SetSize(cvsCustomAdornments);
 			SetSize(cvsSelection);
 			SetSize(cvsAnalysis);
 			SetSize(cvsHints);
