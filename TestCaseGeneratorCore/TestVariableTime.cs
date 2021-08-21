@@ -22,7 +22,7 @@ namespace TestCaseGeneratorCore
 
 		public override void GenerateInitialization(StringBuilder code)
 		{
-			code.AppendLine($"DateTime {Name} = DateTime.Parse(\"{Value:yyy MMM dd hh:mm:ss.fffffff}\");");
+			code.AppendLine($"\tDateTime {Name} = DateTime.Parse(\"{Value:yyy MMM dd hh:mm:ss.fffffff}\");");
 		}
 	}
 }

@@ -219,15 +219,31 @@ namespace TickGraphCore
 			}
 			else  // Left-align:
 				Canvas.SetLeft(timeTextBlock, position.X + 5);
+			Line line = CreateVerticalDashedLineAtX(position.X);
+			cvsCoreAdornments.Children.Add(line);
+		}
 
-
-			Line line = CreateLine(position.X, 0, position.X, chartHeightPixels);
+		public Line CreateVerticalDashedLineAtX(double x)
+		{
+			Line line = CreateLine(x, 0, x, chartHeightPixels);
 			line.IsHitTestVisible = false;
 			line.Stroke = new SolidColorBrush(Color.FromArgb(200, 115, 115, 115));
 			line.StrokeDashArray.Add(5);
 			line.StrokeDashArray.Add(3);
-			cvsCoreAdornments.Children.Add(line);
+			return line;
 		}
+
+		public Line CreateGreenTimeLine(double x)
+		{
+			Line line = CreateLine(x, 0, x, chartHeightPixels);
+			line.IsHitTestVisible = false;
+			line.Stroke = new SolidColorBrush(Color.FromArgb(192, 90, 163, 72));
+			line.StrokeThickness = 1;
+			line.StrokeDashArray.Add(5);
+			line.StrokeDashArray.Add(3);
+			return line;
+		}
+
 		private Size MeasureString(TextBlock textBlock)
 		{
 			var formattedText = new FormattedText(
@@ -269,8 +285,17 @@ namespace TickGraphCore
 			{
 				double size = customAdornment.Size;
 				Viewbox iconTimePoint = FindResource(customAdornment.Key) as Viewbox;
+
 				iconTimePoint.Width = size;
-				double left = chartTranslator.GetStockPositionX(customAdornment.Time, chartWidthPixels) + customAdornment.LeftOffset;
+				double x = chartTranslator.GetStockPositionX(customAdornment.Time, chartWidthPixels);
+
+				if (customAdornment.Key == "iconTimePoint")
+				{
+					Line dashedLine = CreateGreenTimeLine(x);
+					AddCustomAdornment(dashedLine);
+				}
+
+				double left = x + customAdornment.LeftOffset;
 				Canvas.SetLeft(iconTimePoint, left);
 
 				double top = chartTranslator.GetStockPositionY(customAdornment.Price, chartHeightPixels) + customAdornment.TopOffset;
@@ -556,6 +581,19 @@ namespace TickGraphCore
 		public DateTime GetTimeAtMouse()
 		{
 			return chartTranslator.GetTimeFromX(lastMousePosition.X, chartWidthPixels);
+		}
+		public void SaveData(string fullPathToFile)
+		{
+			chartTranslator.SaveAll(fullPathToFile);
+
+			//List<StockDataPoint> loadedPoints = StockDataPoint.Load(fullPathToFile);
+
+			//if (selectedPoints.Matches(loadedPoints))
+			//{
+			//	Title = "It worked!";
+			//}
+			//else
+			//	Title = "Failure!";
 		}
 	}
 }

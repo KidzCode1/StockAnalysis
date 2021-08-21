@@ -57,6 +57,10 @@ namespace TestCaseGeneratorUI
 				return;
 			}
 
+			if (customAdornments != null)
+				customAdornments.Clear();
+
+
 			foreach (TestVariable testVariable in variables)
 			{
 				CustomAdornment customAdornment = new CustomAdornment();
@@ -81,6 +85,7 @@ namespace TestCaseGeneratorUI
 		}
 
 		int numVariablesCreated = 0;
+		DateTime timeAtMouse;
 
 		string GetNewVariableName()
 		{
@@ -89,7 +94,7 @@ namespace TestCaseGeneratorUI
 
 		private void miTime_Click(object sender, RoutedEventArgs e)
 		{
-			AddVariable(new TestVariableTime(GetNewVariableName(), tickGraph.GetTimeAtMouse()));
+			AddVariable(new TestVariableTime(GetNewVariableName(), timeAtMouse));
 		}
 
 		private void miPrice_Click(object sender, RoutedEventArgs e)
@@ -118,6 +123,8 @@ namespace TestCaseGeneratorUI
 
 		private void ContextMenu_Opened(object sender, RoutedEventArgs e)
 		{
+			timeAtMouse = tickGraph.GetTimeAtMouse();
+
 			MenuItem miPrice = GetMenuItem("miPrice");
 			MenuItem miTime = GetMenuItem("miTime");
 			MenuItem miDataPoint = GetMenuItem("miDataPoint");
@@ -152,7 +159,21 @@ namespace TestCaseGeneratorUI
 
 		private void btnGenerateTest_Click(object sender, RoutedEventArgs e)
 		{
+			string testDataFileName = Guid.NewGuid().ToString() + ".json";
+			string projectFolder = Folders.GetProjectFolderName();
+			string testCaseFolder = System.IO.Path.Combine(projectFolder, "BotTraderTests\\TestData");
+			string fullPathTestDataFileName = System.IO.Path.Combine(testCaseFolder, testDataFileName);
+			tickGraph.SaveData(fullPathTestDataFileName);
+			
+
 			StringBuilder code = new StringBuilder();
+
+			string testMethodName = tbxTestCaseName.Text;
+			code.AppendLine("[TestMethod]");
+			code.AppendLine($"public void {testMethodName}()");
+			code.AppendLine("{");
+			code.AppendLine($"\tTickRange range = DataHelper.Load(\"{testDataFileName}\");");
+
 			// TODO: Take a screen shot of the app!!!
 			// TODO: Save the data in chartTranslator!!!
 			// TODO: Build the start of the test case!!!
@@ -160,7 +181,18 @@ namespace TestCaseGeneratorUI
 			{
 				testVariable.GenerateInitialization(code);
 			}
+
+			code.AppendLine("}");
+			string codeSoFar = code.ToString();
 			// TODO: Build the end of the test case!!!
+			//			tickGraph.SaveData(Folders.GetTestFilePath("Test3.json"));
+
+			Clipboard.SetText(code.ToString());
+
+		}
+		public void SetTestName(string str)
+		{
+			tbxTestCaseName.Text = str;
 		}
 	}
 }

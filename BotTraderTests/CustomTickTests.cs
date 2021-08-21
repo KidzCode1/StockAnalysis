@@ -1,6 +1,7 @@
 ﻿using Bittrex.Net.Objects;
 using BotTraderCore;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -80,6 +81,53 @@ namespace BotTraderTests
 			Assert.AreEqual(11, customTick.HighestBidPrice);
 			Assert.AreEqual(10.5m, customTick.LastTradePrice);
 			Assert.AreEqual("BTC-USDT", customTick.Symbol);
+		}
+	}
+
+	[TestClass]
+	public class GeneratedTests
+	{
+		private TestContext testContextInstance;
+
+		/// <summary>
+		///Gets or sets the test context which provides
+		///information about and functionality for the current test run.
+		///</summary>
+		public TestContext TestContext
+		{
+			get
+			{
+				return testContextInstance;
+			}
+			set
+			{
+				testContextInstance = value;
+			}
+		}
+
+		[TestMethod]
+		// The screenshot 
+		public void Test4()
+		{
+			TickRange range = DataHelper.Load("9ae5f99d-5211-4c75-9a73-7df61a832ff1.json");
+			// 
+		}
+	}
+
+	public static class DataHelper
+	{
+		static string dataFolder;
+		static DataHelper()
+		{
+			string projectFolder = Folders.GetProjectFolderName();
+			dataFolder = Path.Combine(projectFolder, "TestData");
+		}
+
+		public static TickRange Load(string dataFileName)
+		{
+			string fullPathTestDataFileName = Path.Combine(dataFolder, dataFileName);
+			string json = File.ReadAllText(fullPathTestDataFileName);
+			return JsonConvert.DeserializeObject<TickRange>(json);
 		}
 	}
 }

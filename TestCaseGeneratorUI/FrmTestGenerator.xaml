@@ -21,8 +21,19 @@
 
             </tickGraphCore:TickGraph>
             <StackPanel Orientation="Vertical">
+                <StackPanel Orientation="Horizontal">
+                	<TextBlock Text="Test Case Name" Width="Auto" Height="Auto"/>
+                    <TextBox x:Name="tbxTestCaseName" >
+                    	
+                    </TextBox>
+                </StackPanel>
             	<TextBlock Text="Variables:" Width="Auto" Height="Auto"/>
                 <ListBox x:Name="lstVariables" >
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBox Text="{Binding Path=Name}" Width="Auto" Height="Auto"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
                 </ListBox>
             </StackPanel>
         </StackPanel>

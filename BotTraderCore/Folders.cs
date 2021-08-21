@@ -21,6 +21,17 @@ namespace BotTraderCore
 			return Combine(applicationPath, fileName);
 		}
 
+		public static string GetProjectFolderName()
+		{
+			string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+			if (baseDirectory.EndsWith("\\"))
+				baseDirectory = baseDirectory.Substring(0, baseDirectory.Length - 1);
+			const string binDebugFolder = "\\bin\\Debug";
+			if (baseDirectory.EndsWith(binDebugFolder))
+				return baseDirectory.Substring(0, baseDirectory.Length - binDebugFolder.Length);
+			return baseDirectory;
+		}
+
 		public static string GetTestFilePath(string fileName)
 		{
 			return Combine(testCaseFolder, fileName);

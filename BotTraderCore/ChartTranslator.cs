@@ -375,11 +375,33 @@ namespace BotTraderCore
 				return;
 
 			lock (stockDataPointsLock)
+			{
+				StockDataPoints.Clear();
 				StockDataPoints.AddRange(tickRange.DataPoints);
+			}
 
 			CalculateBounds();
 			start = tickRange.Start;
 			end = tickRange.End;
+		}
+
+		TickRange GetTickRange(/* DateTime startRange, DateTime endRange */)
+		{
+			TickRange tickRange = new TickRange();
+			tickRange.Start = start;
+			tickRange.End = end;
+			tickRange.DataPoints = new List<StockDataPoint>();
+			tickRange.DataPoints.AddRange(StockDataPoints);
+			if (StockDataPoints.Count > 0)
+				tickRange.ValueBeforeRangeStarts = StockDataPoints[0];
+			tickRange.CalculateLowAndHigh();
+			return tickRange;
+		}
+
+		public void SaveAll(string fullPathToFile)
+		{
+			string serializeObject = Newtonsoft.Json.JsonConvert.SerializeObject(GetTickRange(), Newtonsoft.Json.Formatting.Indented);
+			System.IO.File.WriteAllText(fullPathToFile, serializeObject);
 		}
 	}
 }
