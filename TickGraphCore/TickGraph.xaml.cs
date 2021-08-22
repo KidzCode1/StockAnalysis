@@ -201,7 +201,7 @@ namespace TickGraphCore
 			return line;
 		}
 
-		private void AddDashedLine(Point position)
+		private void AddVerticalTimeLine(Point position)
 		{
 			if (chartTranslator == null)
 				return;
@@ -223,9 +223,37 @@ namespace TickGraphCore
 			cvsCoreAdornments.Children.Add(line);
 		}
 
+		private void AddHorizontalPriceLine(Point position)
+		{
+			if (chartTranslator == null)
+				return;
+			decimal price = chartTranslator.GetPrice(position.Y, chartHeightPixels);
+			TextBlock priceTextBlock = new TextBlock();
+			priceTextBlock.Text = price.ToString();  // No currency yet here.
+			AddCoreAdornment(priceTextBlock);
+
+			if (position.Y > chartHeightPixels / 2)
+			{
+				Canvas.SetTop(priceTextBlock, position.Y - 20);
+			}
+			else  // Left-align:
+				Canvas.SetTop(priceTextBlock, position.Y + 5);
+			Line line = CreateHorizontalDashedLineAtY(position.Y);
+			cvsCoreAdornments.Children.Add(line);
+		}
+
 		public Line CreateVerticalDashedLineAtX(double x)
 		{
 			Line line = CreateLine(x, 0, x, chartHeightPixels);
+			line.IsHitTestVisible = false;
+			line.Stroke = new SolidColorBrush(Color.FromArgb(200, 115, 115, 115));
+			line.StrokeDashArray.Add(5);
+			line.StrokeDashArray.Add(3);
+			return line;
+		}
+		public Line CreateHorizontalDashedLineAtY(double y)
+		{
+			Line line = CreateLine(0, y, chartWidthPixels, y);
 			line.IsHitTestVisible = false;
 			line.Stroke = new SolidColorBrush(Color.FromArgb(200, 115, 115, 115));
 			line.StrokeDashArray.Add(5);
@@ -335,7 +363,7 @@ namespace TickGraphCore
 				lastY = y;
 			}
 
-			AddAdornments(lastMousePosition);
+			AddCoreAdornments(lastMousePosition);
 
 			// TODO: if the mouse is down...
 			//if (mouseIsDown (Selection is active))
@@ -395,7 +423,7 @@ namespace TickGraphCore
 		public void HandleMouseMove(MouseEventArgs e)
 		{
 			lastMousePosition = e.GetPosition(cvsCoreAdornments);
-			AddAdornments(lastMousePosition);
+			AddCoreAdornments(lastMousePosition);
 			UpdateSelectionIfNeeded(e);
 		}
 
@@ -406,7 +434,7 @@ namespace TickGraphCore
 				if (chartTranslator == null)
 					return;
 				Point position = e.GetPosition(cvsSelection);
-				Selection.SetChangingCursor(chartTranslator.GetTimeFromX(position.X, chartWidthPixels));
+				Selection.SetChangingCursor(chartTranslator.GetTime(position.X, chartWidthPixels));
 			}
 		}
 
@@ -465,16 +493,17 @@ namespace TickGraphCore
 			AddCoreAdornment(ellipse);
 		}
 
-		private void AddAdornments(Point position)
+		private void AddCoreAdornments(Point position)
 		{
 			ClearCoreAdornments();
 
-			AddDashedLine(position);
+			AddVerticalTimeLine(position);
+			AddHorizontalPriceLine(position);
 
 			if (chartTranslator == null)
 				return;
 
-			DateTime mouseTime = chartTranslator.GetTimeFromX(position.X, chartWidthPixels);
+			//DateTime mouseTime = chartTranslator.GetTimeFromX(position.X, chartWidthPixels);
 			Ellipse closestEllipse = GetClosestEllipse(position.X, position.Y);
 			if (closestEllipse != null)
 			{
@@ -505,7 +534,7 @@ namespace TickGraphCore
 			if (Selection.IsInBounds(position.X, position.Y))
 			{
 				Selection.Mode = SelectionModes.DraggingToSelect;
-				Selection.Anchor = chartTranslator.GetTimeFromX(position.X, chartWidthPixels);
+				Selection.Anchor = chartTranslator.GetTime(position.X, chartWidthPixels);
 				cvsSelection.CaptureMouse();
 			}
 		}
@@ -535,7 +564,7 @@ namespace TickGraphCore
 			{
 				cvsSelection.ReleaseMouseCapture();
 				Point position = e.GetPosition(cvsSelection);
-				Selection.SetFinalCursor(chartTranslator.GetTimeFromX(position.X, chartWidthPixels));
+				Selection.SetFinalCursor(chartTranslator.GetTime(position.X, chartWidthPixels));
 			}
 		}
 
@@ -562,8 +591,11 @@ namespace TickGraphCore
 
 		private void UserControl_SizeChanged(object sender, SizeChangedEventArgs e)
 		{
-			chartWidthPixels = e.NewSize.Width;
-			chartHeightPixels = e.NewSize.Height;
+			double horizontalMargin = grdContainer.Margin.Left + grdContainer.Margin.Right;
+			double verticalMargin = grdContainer.Margin.Top + grdContainer.Margin.Bottom;
+
+			chartWidthPixels = e.NewSize.Width - horizontalMargin;
+			chartHeightPixels = e.NewSize.Height - verticalMargin - 100;
 
 			// Tip: Ctrl+K, Ctrl+D to format the document!
 			SetSize(cvsBackground);
@@ -580,8 +612,14 @@ namespace TickGraphCore
 
 		public DateTime GetTimeAtMouse()
 		{
-			return chartTranslator.GetTimeFromX(lastMousePosition.X, chartWidthPixels);
+			return chartTranslator.GetTime(lastMousePosition.X, chartWidthPixels);
 		}
+
+		public decimal GetPriceAtMouse()
+		{
+			return chartTranslator.GetPrice(lastMousePosition.Y, chartHeightPixels);
+		}
+
 		public void SaveData(string fullPathToFile)
 		{
 			chartTranslator.SaveAll(fullPathToFile);
@@ -594,6 +632,17 @@ namespace TickGraphCore
 			//}
 			//else
 			//	Title = "Failure!";
+		}
+		public void HideCoreAdornments()
+		{
+			cvsCoreAdornments.Visibility = Visibility.Hidden;
+			cvsHints.Visibility = Visibility.Hidden;
+		}
+
+		public void ShowCoreAdornments()
+		{
+			cvsCoreAdornments.Visibility = Visibility.Visible;
+			cvsHints.Visibility = Visibility.Visible;
 		}
 	}
 }

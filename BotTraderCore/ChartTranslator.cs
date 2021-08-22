@@ -80,27 +80,31 @@ namespace BotTraderCore
 
 		public DateTime GetTime(double x, double chartWidthPixels)
 		{
+			if (x < 0)
+				return start;
 			TimeSpan totalSpanAcross = end - start;
 			double totalSecondsAcross = totalSpanAcross.TotalSeconds;
 			double percentAcross = x / chartWidthPixels;
+			if (percentAcross > 1)
+				return end;
 			double secondsToPoint = percentAcross * totalSecondsAcross;
 
 			return start + TimeSpan.FromSeconds(secondsToPoint);
 		}
 
-		public DateTime GetTimeFromX(double xPos, double chartWidthPixels)
+		public decimal GetPrice(double yPos, double chartHeightPixels)
 		{
-			if (xPos < 0)
-				return start;
+			if (yPos < 0)
+				return low;
 
-			double percentAcross = xPos / chartWidthPixels;
+			double percentUp = yPos / chartHeightPixels;
 
-			if (percentAcross > 1)
-				return end;
+			if (percentUp > 1)
+				return high;
 
-			TimeSpan totalSpanAcross = end - start;
-			double timeAcrossSeconds = percentAcross * totalSpanAcross.TotalSeconds;
-			return start + TimeSpan.FromSeconds(timeAcrossSeconds);
+			decimal totalPriceSpan = high - low;
+			decimal totalPriceDelta = (decimal)percentUp * totalPriceSpan;
+			return high - totalPriceDelta;
 		}
 
 		public double GetStockPositionY(decimal price, double chartHeightPixels)

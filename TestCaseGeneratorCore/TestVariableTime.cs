@@ -6,14 +6,15 @@ namespace TestCaseGeneratorCore
 {
 	public class TestVariableTime : TestVariable
 	{
-		// TODO: We better set Value for this to work!!!
 		public DateTime Value { get; set; }
+
 		public TestVariableTime(string name, DateTime value) : base(name)
 		{
 			Value = value;
 		}
 
-		public override string Key => "iconTimePoint";
+		//` ![](231B54F62598B8BF664EAEB8C31624A8.png;;246,78,304,165)
+		public override string Key => "iconTimePoint";  // The name of the resource for the down arrow in the TickGraph's XAML.
 		public override DateTime Time => Value;
 		public override decimal Price => decimal.MaxValue;  // Put this at the top of the graph
 		public override double Size => 50;

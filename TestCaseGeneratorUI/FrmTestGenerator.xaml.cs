@@ -86,6 +86,7 @@ namespace TestCaseGeneratorUI
 
 		int numVariablesCreated = 0;
 		DateTime timeAtMouse;
+		decimal priceAtMouse;
 
 		string GetNewVariableName()
 		{
@@ -99,7 +100,7 @@ namespace TestCaseGeneratorUI
 
 		private void miPrice_Click(object sender, RoutedEventArgs e)
 		{
-
+			AddVariable(new TestVariablePrice(GetNewVariableName(), priceAtMouse));
 		}
 
 		private void miDataPoint_Click(object sender, RoutedEventArgs e)
@@ -124,6 +125,7 @@ namespace TestCaseGeneratorUI
 		private void ContextMenu_Opened(object sender, RoutedEventArgs e)
 		{
 			timeAtMouse = tickGraph.GetTimeAtMouse();
+			priceAtMouse = tickGraph.GetPriceAtMouse();
 
 			MenuItem miPrice = GetMenuItem("miPrice");
 			MenuItem miTime = GetMenuItem("miTime");
@@ -157,6 +159,28 @@ namespace TestCaseGeneratorUI
 			tickGraph.DrawGraph(customAdornments);
 		}
 
+		string SaveScreenShot()
+		{
+			string screenShotName;
+			// do work here.
+			string projectFolder = Folders.GetProjectFolderName();
+
+			screenShotName = Guid.NewGuid().ToString() + ".png";
+			string fullPathToFile = System.IO.Path.Combine(projectFolder, ".cr\\images", screenShotName);
+			int width = (int)tickGraph.ActualWidth;
+			int height = (int)tickGraph.ActualHeight;
+			RenderTargetBitmap renderTargetBitmap = new RenderTargetBitmap(width, height, 96, 96, PixelFormats.Pbgra32);
+
+			tickGraph.HideCoreAdornments();
+			renderTargetBitmap.Render(tickGraph);
+			tickGraph.ShowCoreAdornments();
+
+			PngBitmapEncoder pngImage = new PngBitmapEncoder();
+			pngImage.Frames.Add(BitmapFrame.Create(renderTargetBitmap));
+			using (System.IO.Stream fileStream = System.IO.File.Create(fullPathToFile))
+				pngImage.Save(fileStream);
+			return screenShotName;
+		}
 		private void btnGenerateTest_Click(object sender, RoutedEventArgs e)
 		{
 			string testDataFileName = Guid.NewGuid().ToString() + ".json";
@@ -164,11 +188,12 @@ namespace TestCaseGeneratorUI
 			string testCaseFolder = System.IO.Path.Combine(projectFolder, "BotTraderTests\\TestData");
 			string fullPathTestDataFileName = System.IO.Path.Combine(testCaseFolder, testDataFileName);
 			tickGraph.SaveData(fullPathTestDataFileName);
-			
 
+			string screenShotName = SaveScreenShot();
 			StringBuilder code = new StringBuilder();
 
 			string testMethodName = tbxTestCaseName.Text;
+			code.AppendLine($"//`![]({screenShotName};;;0.02500,0.02500)");
 			code.AppendLine("[TestMethod]");
 			code.AppendLine($"public void {testMethodName}()");
 			code.AppendLine("{");

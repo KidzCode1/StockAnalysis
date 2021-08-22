@@ -41,6 +41,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TestVariablePrice.cs" />
     <Compile Include="TestVariableTime.cs" />
     <Compile Include="TestVariable.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
