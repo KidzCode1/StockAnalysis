@@ -95,12 +95,12 @@ namespace BotTraderCore
 		public decimal GetPrice(double yPos, double chartHeightPixels)
 		{
 			if (yPos < 0)
-				return low;
+				return high;
 
 			double percentUp = yPos / chartHeightPixels;
 
 			if (percentUp > 1)
-				return high;
+				return low;
 
 			decimal totalPriceSpan = high - low;
 			decimal totalPriceDelta = (decimal)percentUp * totalPriceSpan;
