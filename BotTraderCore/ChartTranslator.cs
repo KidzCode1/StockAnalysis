@@ -128,7 +128,7 @@ namespace BotTraderCore
 
 		public StockDataPoint AddStockPosition(CustomTick data)
 		{
-			StockDataPoint stockDataPoint = new StockDataPoint(data);
+			 StockDataPoint stockDataPoint = new StockDataPoint(data);
 			if (stockDataPoints.Count >= 2)
 			{
 				//RemoveMatchingDataPoints(data, stockDataPoint);

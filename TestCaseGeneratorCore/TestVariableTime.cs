@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Linq;
 using System.Text;
+using System.Windows.Media;
+using TickGraphCore;
 
 namespace TestCaseGeneratorCore
 {
@@ -18,8 +20,11 @@ namespace TestCaseGeneratorCore
 		public override DateTime Time => Value;
 		public override decimal Price => decimal.MaxValue;  // Put this at the top of the graph
 		public override double Size => 50;
-		public override double LeftOffset => -Size / 2;
-		public override double TopOffset => -10;
+		public override double IconLeftOffset => -Size / 2;
+		public override double LabelLeftOffset => Size / 3;
+		public override double IconTopOffset => -10;
+		public override DashedLineOption DashedLineOption => DashedLineOption.Vertical;
+		public override Color Color => Colors.Blue; 
 
 		public override void GenerateInitialization(StringBuilder code)
 		{

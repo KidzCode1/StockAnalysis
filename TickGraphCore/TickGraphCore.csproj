@@ -53,6 +53,8 @@
       <SubType>Designer</SubType>
     </Page>
     <Compile Include="CustomAdornment.cs" />
+    <Compile Include="DashedLineOption.cs" />
+    <Compile Include="LabelAlignment.cs" />
     <Compile Include="Selection.cs" />
     <Compile Include="SelectionModes.cs" />
     <Compile Include="TickGraph.xaml.cs" />

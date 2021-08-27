@@ -31,7 +31,7 @@
                 <ListBox x:Name="lstVariables" >
                     <ListBox.ItemTemplate>
                         <DataTemplate>
-                            <TextBox Text="{Binding Path=Name}" Width="Auto" Height="Auto"/>
+                            <TextBox Text="{Binding Path=Name, Mode=TwoWay}" Width="Auto" Height="Auto" TextChanged="TextBox_TextChanged"/>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>

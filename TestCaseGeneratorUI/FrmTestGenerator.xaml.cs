@@ -65,11 +65,18 @@ namespace TestCaseGeneratorUI
 			{
 				CustomAdornment customAdornment = new CustomAdornment();
 				customAdornment.Key = testVariable.Key;
+				customAdornment.Name = testVariable.Name;
 				customAdornment.Time = testVariable.Time;
 				customAdornment.Price = testVariable.Price;
 				customAdornment.Size = testVariable.Size;
-				customAdornment.LeftOffset = testVariable.LeftOffset;
-				customAdornment.TopOffset = testVariable.TopOffset;
+				customAdornment.IconLeftOffset = testVariable.IconLeftOffset;
+				customAdornment.IconTopOffset = testVariable.IconTopOffset;
+				customAdornment.LabelLeftOffset = testVariable.LabelLeftOffset;
+				customAdornment.LabelTopOffset = testVariable.LabelTopOffset;
+				customAdornment.LabelAlignment = testVariable.LabelAlignment;
+				customAdornment.DashedLineOption = testVariable.DashedLineOption;
+				customAdornment.Color = testVariable.Color;
+
 
 				if (customAdornments == null)
 					customAdornments = new List<CustomAdornment>();
@@ -218,6 +225,12 @@ namespace TestCaseGeneratorUI
 		public void SetTestName(string str)
 		{
 			tbxTestCaseName.Text = str;
+		}
+
+		private void TextBox_TextChanged(object sender, TextChangedEventArgs e)
+		{
+			RebuildVariableAdornments();
+			DrawGraph();
 		}
 	}
 }

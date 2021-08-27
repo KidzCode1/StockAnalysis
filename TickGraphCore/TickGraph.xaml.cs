@@ -22,6 +22,9 @@ namespace TickGraphCore
 	/// </summary>
 	public partial class TickGraph : UserControl
 	{
+		Color verticalTimeLineColor = Color.FromArgb(200, 115, 115, 115);
+		Color horizontalPriceLineColor = Color.FromArgb(200, 115, 115, 115);
+
 		public Selection Selection { get; set; } = new Selection();
 
 		Point lastMousePosition;
@@ -219,7 +222,8 @@ namespace TickGraphCore
 			}
 			else  // Left-align:
 				Canvas.SetLeft(timeTextBlock, position.X + 5);
-			Line line = CreateVerticalDashedLineAtX(position.X);
+			
+			Line line = CreateVerticalDashedLineAtX(position.X, verticalTimeLineColor);
 			cvsCoreAdornments.Children.Add(line);
 		}
 
@@ -238,35 +242,26 @@ namespace TickGraphCore
 			}
 			else  // Left-align:
 				Canvas.SetTop(priceTextBlock, position.Y + 5);
-			Line line = CreateHorizontalDashedLineAtY(position.Y);
+			
+			Line line = CreateHorizontalDashedLineAtY(position.Y, horizontalPriceLineColor);
 			cvsCoreAdornments.Children.Add(line);
 		}
 
-		public Line CreateVerticalDashedLineAtX(double x)
+		public Line CreateVerticalDashedLineAtX(double x, Color color)
 		{
 			Line line = CreateLine(x, 0, x, chartHeightPixels);
 			line.IsHitTestVisible = false;
-			line.Stroke = new SolidColorBrush(Color.FromArgb(200, 115, 115, 115));
-			line.StrokeDashArray.Add(5);
-			line.StrokeDashArray.Add(3);
-			return line;
-		}
-		public Line CreateHorizontalDashedLineAtY(double y)
-		{
-			Line line = CreateLine(0, y, chartWidthPixels, y);
-			line.IsHitTestVisible = false;
-			line.Stroke = new SolidColorBrush(Color.FromArgb(200, 115, 115, 115));
+			line.Stroke = new SolidColorBrush(color);
 			line.StrokeDashArray.Add(5);
 			line.StrokeDashArray.Add(3);
 			return line;
 		}
 
-		public Line CreateGreenTimeLine(double x)
+		public Line CreateHorizontalDashedLineAtY(double y, Color color)
 		{
-			Line line = CreateLine(x, 0, x, chartHeightPixels);
+			Line line = CreateLine(0, y, chartWidthPixels, y);
 			line.IsHitTestVisible = false;
-			line.Stroke = new SolidColorBrush(Color.FromArgb(192, 90, 163, 72));
-			line.StrokeThickness = 1;
+			line.Stroke = new SolidColorBrush(color);
 			line.StrokeDashArray.Add(5);
 			line.StrokeDashArray.Add(3);
 			return line;
@@ -310,27 +305,97 @@ namespace TickGraphCore
 				return;
 
 			foreach (CustomAdornment customAdornment in customAdornments)
+				DrawAdornment(customAdornment);
+		}
+
+		private void DrawAdornment(CustomAdornment customAdornment)
+		{
+			Point point = GetAdornmentPoint(customAdornment);
+
+			AddDashedLineIfNecessary(customAdornment, point);
+
+			PositionIcon(customAdornment, point);
+			DrawLabel(customAdornment, point);
+		}
+
+		void DrawLabel(CustomAdornment customAdornment, Point point)
+		{
+			TextBlock textBlock = new TextBlock();
+			textBlock.Text = customAdornment.Name;
+			switch (customAdornment.LabelAlignment)
 			{
-				double size = customAdornment.Size;
-				Viewbox iconTimePoint = FindResource(customAdornment.Key) as Viewbox;
-
-				iconTimePoint.Width = size;
-				double x = chartTranslator.GetStockPositionX(customAdornment.Time, chartWidthPixels);
-
-				if (customAdornment.Key == "iconTimePoint")
-				{
-					Line dashedLine = CreateGreenTimeLine(x);
-					AddCustomAdornment(dashedLine);
-				}
-
-				double left = x + customAdornment.LeftOffset;
-				Canvas.SetLeft(iconTimePoint, left);
-
-				double top = chartTranslator.GetStockPositionY(customAdornment.Price, chartHeightPixels) + customAdornment.TopOffset;
-				Canvas.SetTop(iconTimePoint, top);
-				AddCustomAdornment(iconTimePoint);
+				case LabelAlignment.Left:
+					textBlock.HorizontalAlignment = HorizontalAlignment.Left;
+					break;
+				case LabelAlignment.Center:
+					textBlock.HorizontalAlignment = HorizontalAlignment.Center;
+					break;
+				case LabelAlignment.Right:
+					textBlock.HorizontalAlignment = HorizontalAlignment.Right;
+					break;
 			}
-			// TODO: Do this!!!
+			Canvas.SetLeft(textBlock, point.X + customAdornment.LabelLeftOffset);
+			Canvas.SetTop(textBlock, point.Y + customAdornment.LabelTopOffset);
+			AddCustomAdornment(textBlock);
+		}
+
+		private void PositionIcon(CustomAdornment customAdornment, Point point)
+		{
+			Viewbox icon = GetIcon(customAdornment);
+
+			double left = point.X + customAdornment.IconLeftOffset;
+			double top = point.Y + customAdornment.IconTopOffset;
+			Canvas.SetLeft(icon, left);
+			Canvas.SetTop(icon, top);
+			AddCustomAdornment(icon);
+		}
+
+		private Point GetAdornmentPoint(CustomAdornment customAdornment)
+		{
+			double x = chartTranslator.GetStockPositionX(customAdornment.Time, chartWidthPixels);
+			double y = chartTranslator.GetStockPositionY(customAdornment.Price, chartHeightPixels);
+			Point adornmentPoint = new Point(x, y);
+			return adornmentPoint;
+		}
+
+		private void AddDashedLineIfNecessary(CustomAdornment customAdornment, Point point)
+		{
+			if (customAdornment.DashedLineOption == DashedLineOption.Vertical)
+			{
+				Line dashedLine = CreateVerticalDashedLineAtX(point.X, customAdornment.Color);
+				AddCustomAdornment(dashedLine);
+			}
+			if (customAdornment.DashedLineOption == DashedLineOption.Horizontal)
+			{
+				Line dashedLine = CreateHorizontalDashedLineAtY(point.Y, customAdornment.Color);
+				AddCustomAdornment(dashedLine);
+			}
+		}
+
+		void ChangeColor(Canvas canvas, Color color)
+		{
+			if (canvas == null)
+				return;
+			foreach (UIElement uIElement in canvas.Children)
+			{
+				if (uIElement is Polygon polygon)
+				{
+					if (polygon.Fill != null)
+						polygon.Fill = new SolidColorBrush(color);
+					if (polygon.Stroke != null)
+						polygon.Stroke = new SolidColorBrush(color);
+				}
+				if (uIElement is Canvas childCanvas)
+					ChangeColor(childCanvas, color);
+			}
+		}
+
+		private Viewbox GetIcon(CustomAdornment customAdornment)
+		{
+			Viewbox iconTimePoint = FindResource(customAdornment.Key) as Viewbox;
+			iconTimePoint.Width = customAdornment.Size;
+			ChangeColor(iconTimePoint.Child as Canvas, customAdornment.Color);
+			return iconTimePoint;
 		}
 
 		public void DrawGraph(List<CustomAdornment> customAdornments = null)
