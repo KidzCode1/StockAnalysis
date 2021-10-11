@@ -3,12 +3,12 @@ using Newtonsoft.Json;
 using System;
 using System.IO;
 
-namespace BotTraderTests
+namespace BotTraderCore
 {
-	public static class DataHelper
+	public static class TestData
 	{
 		static string dataFolder;
-		static DataHelper()
+		static TestData()
 		{
 			string projectFolder = Folders.GetProjectFolderName();
 			dataFolder = Path.Combine(projectFolder, "TestData");

@@ -31,8 +31,8 @@ namespace BotTraderTests
 		[TestMethod]
 		public void TestSaveLoad()
 		{
-			string fivePointsFile = Folders.GetTestFilePath("FivePoints.json");
-			string testSaveFile = Folders.GetTestFilePath("FivePointsTestSave.json");
+			string fivePointsFile = UserDataFolders.GetTestFilePath("FivePoints.json");
+			string testSaveFile = UserDataFolders.GetTestFilePath("FivePointsTestSave.json");
 			if (File.Exists(testSaveFile))
 				File.Delete(testSaveFile);
 			List<StockDataPoint> loadedPoints = StockDataPoint.Load(fivePointsFile);

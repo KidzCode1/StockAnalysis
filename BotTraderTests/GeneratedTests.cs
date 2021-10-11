@@ -29,7 +29,7 @@ namespace BotTraderTests
 [TestMethod]
 public void Test1()
 {
-	TickRange range = DataHelper.Load("249e141e-da86-4f46-b7db-4721d77441b3.json");
+	TickRange range = TestData.Load("249e141e-da86-4f46-b7db-4721d77441b3.json");
 	DateTime var0 = DateTime.Parse("2021 Aug 27 10:48:18.8574523");
 	decimal var1 = decimal.Parse("48222.62908065651064144105248");
 }
@@ -37,7 +37,7 @@ public void Test1()
 		[TestMethod]
 		public void TestRightGreaterThanLeft()
 		{
-			TickRange range = DataHelper.Load("c4585917-4953-440d-a33c-d1cd26b73cbd.json");
+			TickRange range = TestData.Load("c4585917-4953-440d-a33c-d1cd26b73cbd.json");
 			DateTime Right = DateTime.Parse("2021 Aug 22 09:34:04.2064045");
 			DateTime Left = DateTime.Parse("2021 Aug 22 09:29:57.4714045");
 			Assert.IsTrue(Right > Left);

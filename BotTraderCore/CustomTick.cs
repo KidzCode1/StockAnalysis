@@ -11,10 +11,13 @@ namespace BotTraderCore
 		// Summary:
 		//     Symbol of the ticker
 		public string Symbol { get; set; } = "";
+
 		[JsonProperty(PropertyName ="Price")]
 		public decimal LastTradePrice { get; set; }
+
 		[JsonProperty(PropertyName = "Bid")]
 		public decimal HighestBidPrice { get; set; }
+
 		[JsonProperty(PropertyName = "Ask")]
 		public decimal LowestAskPrice { get; set; }
 
