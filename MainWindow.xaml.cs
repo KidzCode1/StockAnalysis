@@ -65,9 +65,9 @@ namespace StockAnalysis
 			});
 		}
 		
-		private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+		private async void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
 		{
-			bittrexSocketClient.UnsubscribeAll();
+			await bittrexSocketClient.UnsubscribeAll();
 		}
 
 		int numTestsCreatedSoFar;

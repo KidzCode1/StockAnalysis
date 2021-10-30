@@ -6,127 +6,183 @@
              xmlns:local="clr-namespace:TickGraphCore"
              mc:Ignorable="d" 
              d:DesignHeight="700" d:DesignWidth="600" Background="White" PreviewMouseDown="UserControl_PreviewMouseDown" PreviewMouseMove="UserControl_PreviewMouseMove" PreviewMouseUp="UserControl_PreviewMouseUp" SizeChanged="UserControl_SizeChanged">
-    <UserControl.Resources>
-        <Viewbox x:Key="iconTimePoint" Width="36" x:Shared="false" >
-            <Canvas Width="198" Height="213">
-                <Polygon Points="32.5,114 65.75,114 65.75,32.5 132.25,32.5 132.25,114 165.5,114 99,180.5" FillRule="EvenOdd" Fill="#FFA9D18E" Stroke="{x:Null}" />
-                <Canvas>
-                    <Canvas.Clip>
-                        <RectangleGeometry Rect="23,29,153,158" />
-                    </Canvas.Clip>
-                    <Polygon Points="32.5,114 65.75,114 65.75,32.5 132.25,32.5 132.25,114 165.5,114 99,180.5" FillRule="EvenOdd" Fill="{x:Null}" Stroke="#FF70AD47" StrokeThickness="8.3125" />
-                </Canvas>
-            </Canvas>
-        </Viewbox>
-        <Viewbox x:Key="iconPricePoint" x:Shared="false" >
-            <Canvas Width="213" Height="213">
-                <Polygon Points="106.5,180.5 106.5,143.5 32.5,143.5 32.5,69.5 106.5,69.5 106.5,32.5 180.5,106.5" FillRule="EvenOdd" Fill="#FFFF6D6D" Stroke="{x:Null}" />
-                <Canvas>
-                    <Canvas.Clip>
-                        <RectangleGeometry Rect="29,23,158,168" />
-                    </Canvas.Clip>
-                    <Polygon Points="106.5,180.5 106.5,143.5 32.5,143.5 32.5,69.5 106.5,69.5 106.5,32.5 180.5,106.5" FillRule="EvenOdd" Fill="{x:Null}" Stroke="#FFBF9000" StrokeThickness="8.3125" />
-                </Canvas>
-            </Canvas>
-        </Viewbox>
-    </UserControl.Resources>
-    <Grid x:Name="grdContainer" Height="700" Width="600" Margin="15" >
-        <Canvas x:Name="cvsBackground" Height="700" Width="600">
-            <!--This is so the preview mouse events get sent.-->
-            <Rectangle x:Name="rctBackground" Height="700" Width="600"></Rectangle>
-        </Canvas>
-        <Canvas x:Name="cvsMain" Height="700" Width="600">
+	<UserControl.Resources>
+		<Viewbox x:Key="iconTimePoint" Width="36" x:Shared="false" >
+			<Canvas Width="198" Height="213">
+				<Polygon Points="32.5,114 65.75,114 65.75,32.5 132.25,32.5 132.25,114 165.5,114 99,180.5" FillRule="EvenOdd" Fill="#FFA9D18E" Stroke="{x:Null}" />
+				<Canvas>
+					<Canvas.Clip>
+						<RectangleGeometry Rect="23,29,153,158" />
+					</Canvas.Clip>
+					<Polygon Points="32.5,114 65.75,114 65.75,32.5 132.25,32.5 132.25,114 165.5,114 99,180.5" FillRule="EvenOdd" Fill="{x:Null}" Stroke="#FF70AD47" StrokeThickness="8.3125" />
+				</Canvas>
+			</Canvas>
+		</Viewbox>
+		<Viewbox x:Key="iconPricePoint" x:Shared="false" >
+			<Canvas Width="213" Height="213">
+				<Polygon Points="106.5,180.5 106.5,143.5 32.5,143.5 32.5,69.5 106.5,69.5 106.5,32.5 180.5,106.5" FillRule="EvenOdd" Fill="#FFFF6D6D" Stroke="{x:Null}" />
+				<Canvas>
+					<Canvas.Clip>
+						<RectangleGeometry Rect="29,23,158,168" />
+					</Canvas.Clip>
+					<Polygon Points="106.5,180.5 106.5,143.5 32.5,143.5 32.5,69.5 106.5,69.5 106.5,32.5 180.5,106.5" FillRule="EvenOdd" Fill="{x:Null}" Stroke="#FFBF9000" StrokeThickness="8.3125" />
+				</Canvas>
+			</Canvas>
+		</Viewbox>
+	</UserControl.Resources>
+	<Grid x:Name="grdContainer" Height="700" Width="600" Margin="15" >
+		<Canvas x:Name="cvsBackground" Height="700" Width="600" MouseEnter="cvsBackground_MouseEnter" MouseLeave="cvsBackground_MouseLeave">
+			<!--This is so the preview mouse events get sent.-->
+			<Rectangle x:Name="rctBackground" Height="700" Width="600" Stroke="#FFBFBFFF" Fill="#01ffffff"></Rectangle>
+		</Canvas>
+		<Canvas x:Name="cvsMain" Height="700" Width="600">
 
-        </Canvas>
-        <Canvas x:Name="cvsCoreAdornments" Height="700" Width="600">
-        </Canvas>
-        <Canvas x:Name="cvsCustomAdornments" Height="700" Width="600">
-        </Canvas>
-        <Canvas x:Name="cvsSelection" Height="700" Width="600">
-        </Canvas>
+		</Canvas>
+		<Canvas x:Name="cvsCoreAdornments" Height="700" Width="600">
+		</Canvas>
+		<Canvas x:Name="cvsCustomAdornments" Height="700" Width="600">
+		</Canvas>
+		<Canvas x:Name="cvsSelection" Height="700" Width="600">
+		</Canvas>
 
-        <Canvas x:Name="cvsAnalysis" Height="700" Width="600" Margin="0, 300, 0, 0">
-        </Canvas>
+		<Canvas x:Name="cvsAnalysis" Height="700" Width="600" Margin="0, 300, 0, 0">
+		</Canvas>
 
-        <Canvas x:Name="cvsHints" Height="700" Width="600">
-            <Viewbox x:Name="stockHintPointingLeft" Width="360" Visibility="Visible">
-                <Canvas Width="2399" Height="752">
-                    <Path Fill="#FFBFBFBF">
-                        <Path.Data>
-                            <PathGeometry Figures="M353.125,54.5L2352.75,54.5C2375.25,54.5,2393.5,67.125,2393.5,82.75L2393.5,714.375C2393.5,730,2375.25,742.5,2352.75,742.5L353.125,742.5C330.5,742.5,312.25,730,312.25,714.375L312.25,359.875 59.5,253.25 312.25,146.625 312.25,82.75C312.25,67.125,330.5,54.5,353.125,54.5z" />
-                        </Path.Data>
-                    </Path>
-                    <Path Fill="#FFFFFAEB">
-                        <Path.Data>
-                            <PathGeometry Figures="M326.125,32.5L2325.75,32.5C2348.25,32.5,2366.5,45.125,2366.5,60.75L2366.5,691.375C2366.5,707,2348.25,719.5,2325.75,719.5L326.125,719.5C303.5,719.5,285.25,707,285.25,691.375L285.25,337.375 32.5,231 285.25,124.5 285.25,60.75C285.25,45.125,303.5,32.5,326.125,32.5z" />
-                        </Path.Data>
-                    </Path>
-                    <Canvas>
-                        <Canvas.Clip>
-                            <RectangleGeometry Rect="22,29,2372,714" />
-                        </Canvas.Clip>
-                        <Path Stroke="#FFBF9000" StrokeThickness="8.375">
-                            <Path.Data>
-                                <PathGeometry Figures="M326.125,32.5L2325.75,32.5C2348.25,32.5,2366.5,45.125,2366.5,60.75L2366.5,691.375C2366.5,707,2348.25,719.5,2325.75,719.5L326.125,719.5C303.5,719.5,285.25,707,285.25,691.375L285.25,337.375 32.5,231 285.25,124.5 285.25,60.75C285.25,45.125,303.5,32.5,326.125,32.5z" />
-                            </Path.Data>
-                        </Path>
-                    </Canvas>
-                </Canvas>
-            </Viewbox>
-            <Viewbox x:Name="stockHintPointingRight" Width="360" Visibility="Hidden">
-                <Canvas Width="2399" Height="752">
-                    <Path Fill="#FFBFBFBF">
-                        <Path.Data>
-                            <PathGeometry Figures="M2097.875,55.5L97.375,55.5C74.875,55.5,56.5,68.125,56.5,83.75L56.5,714.375C56.5,730,74.875,742.5,97.375,742.5L2097.875,742.5C2120.5,742.5,2138.75,730,2138.75,714.375L2138.75,360.375 2391.5,254 2138.75,147.5 2138.75,83.75C2138.75,68.125,2120.5,55.5,2097.875,55.5z" />
-                        </Path.Data>
-                    </Path>
-                    <Path Fill="#FFFFFAEB">
-                        <Path.Data>
-                            <PathGeometry Figures="M2073,32.5L73.375,32.5C50.875,32.5,32.5,45.125,32.5,60.75L32.5,691.375C32.5,707,50.875,719.5,73.375,719.5L2073,719.5C2095.625,719.5,2113.875,707,2113.875,691.375L2113.875,337.375 2366.5,231 2113.875,124.5 2113.875,60.75C2113.875,45.125,2095.625,32.5,2073,32.5z" />
-                        </Path.Data>
-                    </Path>
-                    <Canvas>
-                        <Canvas.Clip>
-                            <RectangleGeometry Rect="29,29,2363,714" />
-                        </Canvas.Clip>
-                        <Path Stroke="#FFBF9000" StrokeThickness="8.375">
-                            <Path.Data>
-                                <PathGeometry Figures="M2073,32.5L73.375,32.5C50.875,32.5,32.5,45.125,32.5,60.75L32.5,691.375C32.5,707,50.875,719.5,73.375,719.5L2073,719.5C2095.625,719.5,2113.875,707,2113.875,691.375L2113.875,337.375 2366.5,231 2113.875,124.5 2113.875,60.75C2113.875,45.125,2095.625,32.5,2073,32.5z" />
-                            </Path.Data>
-                        </Path>
-                    </Canvas>
-                </Canvas>
-            </Viewbox>
-            <!--Canvas.Left="10" Canvas.Top="10"-->
-            <Grid x:Name="grdStockTickDetails" Height="115" Width="280" Canvas.Left="53" Canvas.Top="10" Visibility="Visible">
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="8"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Grid.Resources>
-                    <Style TargetType="TextBlock">
-                        <Setter Property="FontSize" Value="16.3"></Setter>
-                        <Setter Property="Foreground" Value="#FF4F442B"></Setter>
-                    </Style>
-                </Grid.Resources>
-                <TextBlock Text="Trade Price:" Width="Auto" Height="Auto"/>
-                <TextBlock Grid.Row="1" Text="Highest Bid:" Width="Auto" Height="Auto"/>
-                <TextBlock Grid.Row="2" Text="Lowest Ask:" Width="Auto" Height="Auto"/>
-                <TextBlock Grid.Row="3" Text="Time:" Width="Auto" Height="Auto"/>
-                <TextBlock Grid.Column="2" x:Name="tbTradePrice" Text="2 BTC" Width="Auto" Height="Auto" FontWeight="Bold" Foreground="Black" />
-                <TextBlock Grid.Column="2" Grid.Row="1" x:Name="tbHighestBid" Text="3 BTC" Width="Auto" Foreground="Black" Height="Auto"/>
-                <TextBlock Grid.Column="2" Grid.Row="2" x:Name="tbLowestAsk" Text="4 BTC" Width="Auto" Foreground="Black" Height="Auto"/>
-                <TextBlock Grid.Column="2" Grid.Row="3" x:Name="tbTime" Text="0:00" Width="Auto" Foreground="Black" Height="Auto"/>
-            </Grid>
-        </Canvas>
+		<Canvas x:Name="cvsAllHints" Height="700" Width="600">
+			<Canvas x:Name="cvsHints" Visibility="Visible">
+				<Viewbox x:Name="vbHintUR" Width="220" Grid.ColumnSpan="5" Grid.RowSpan="6" Grid.Row="1" Canvas.Top="-22" Visibility="Hidden" Panel.ZIndex="9999999">
+					<Canvas Width="2037" Height="927">
+						<Path Fill="#7F000000">
+							<Path.Data>
+								<PathGeometry Figures="M2000.6875,920.5L84.375,920.5C69,920.5,56.5,908.0625,56.5,892.6875L56.5,280.75C56.5,265.375,69,252.9375,84.375,252.9375L1645.0625,252.9375 2016.9375,35.5 1838.1875,252.9375 2000.6875,252.9375C2016.0625,252.9375,2028.5,265.375,2028.5,280.75L2028.5,892.6875C2028.5,908.0625,2016.0625,920.5,2000.6875,920.5z" />
+							</Path.Data>
+						</Path>
+						<Path Fill="#FFFFFFFF">
+							<Path.Data>
+								<PathGeometry Figures="M1976.6875,894.5L60.375,894.5C45,894.5,32.5,882.0625,32.5,866.6875L32.5,254.4375C32.5,239.0625,45,226.625,60.375,226.625L1621.0625,226.625 2002.3125,32.5 1814.1875,226.625 1976.6875,226.625C1992.0625,226.625,2004.5,239.0625,2004.5,254.4375L2004.5,866.6875C2004.5,882.0625,1992.0625,894.5,1976.6875,894.5z" />
+							</Path.Data>
+						</Path>
+						<Canvas>
+							<Canvas.Clip>
+								<RectangleGeometry Rect="29,18,2000,903" />
+							</Canvas.Clip>
+							<Path Stroke="#FFBFBFBF" StrokeThickness="8.3125">
+								<Path.Data>
+									<PathGeometry Figures="M1976.6875,894.5L60.375,894.5C45,894.5,32.5,882.0625,32.5,866.6875L32.5,254.4375C32.5,239.0625,45,226.625,60.375,226.625L1621.0625,226.625 2002.3125,32.5 1814.1875,226.625 1976.6875,226.625C1992.0625,226.625,2004.5,239.0625,2004.5,254.4375L2004.5,866.6875C2004.5,882.0625,1992.0625,894.5,1976.6875,894.5z" />
+								</Path.Data>
+							</Path>
+						</Canvas>
+					</Canvas>
+				</Viewbox>
+				<Viewbox x:Name="vbHintLR" Width="220" Grid.ColumnSpan="5" Grid.RowSpan="6" Grid.Row="1" Visibility="Hidden" Panel.ZIndex="9999999">
+					<Canvas Width="2037" Height="927">
+						<Path Fill="#7F000000">
+							<Path.Data>
+								<PathGeometry Figures="M2003.6875,61.5L87.375,61.5C72,61.5,59.5,74,59.5,89.3125L59.5,700.9375C59.5,716.25,72,728.75,87.375,728.75L1648.0625,728.75 2012.125,908.5 1841.1875,728.75 2003.6875,728.75C2019.0625,728.75,2031.5,716.25,2031.5,700.9375L2031.5,89.3125C2031.5,74,2019.0625,61.5,2003.6875,61.5z" />
+							</Path.Data>
+						</Path>
+						<Path Fill="#FFFFFFFF">
+							<Path.Data>
+								<PathGeometry Figures="M1976.6875,32.5L60.375,32.5C45,32.5,32.5,45,32.5,60.375L32.5,672.625C32.5,688,45,700.4375,60.375,700.4375L1621.0625,700.4375 2002.3125,894.5 1814.1875,700.4375 1976.6875,700.4375C1992.0625,700.4375,2004.5,688,2004.5,672.625L2004.5,60.375C2004.5,45,1992.0625,32.5,1976.6875,32.5z" />
+							</Path.Data>
+						</Path>
+						<Canvas>
+							<Canvas.Clip>
+								<RectangleGeometry Rect="29,29,2003,881" />
+							</Canvas.Clip>
+							<Path Stroke="#FFBFBFBF" StrokeThickness="8.3125">
+								<Path.Data>
+									<PathGeometry Figures="M1976.6875,32.5L60.375,32.5C45,32.5,32.5,45,32.5,60.375L32.5,672.625C32.5,688,45,700.4375,60.375,700.4375L1621.0625,700.4375 2002.3125,894.5 1814.1875,700.4375 1976.6875,700.4375C1992.0625,700.4375,2004.5,688,2004.5,672.625L2004.5,60.375C2004.5,45,1992.0625,32.5,1976.6875,32.5z" />
+								</Path.Data>
+							</Path>
+						</Canvas>
+					</Canvas>
+				</Viewbox>
+				<Viewbox x:Name="vbHintUL" Width="220" Grid.ColumnSpan="5" Grid.RowSpan="6" Grid.Row="1" Visibility="Hidden" Canvas.Top="-22" Panel.ZIndex="9999999">
+					<Canvas Width="2037" Height="927">
+						<Path Fill="#7F000000">
+							<Path.Data>
+								<PathGeometry Figures="M84.5,920.5L2000.6875,920.5C2016.0625,920.5,2028.5,908.0625,2028.5,892.75L2028.5,281C2028.5,265.6875,2016.0625,253.1875,2000.6875,253.1875L440.125,253.1875 24.5,26.5 247,253.1875 84.5,253.1875C69.125,253.1875,56.6875,265.6875,56.6875,281L56.6875,892.75C56.6875,908.0625,69.125,920.5,84.5,920.5z" />
+							</Path.Data>
+						</Path>
+						<Path Fill="#FFFFFFFF">
+							<Path.Data>
+								<PathGeometry Figures="M60.375,894.5L1976.6875,894.5C1992.0625,894.5,2004.5,882.0625,2004.5,866.6875L2004.5,254.4375C2004.5,239.0625,1992.0625,226.625,1976.6875,226.625L416,226.625 34.75,32.5 222.875,226.625 60.375,226.625C45,226.625,32.5,239.0625,32.5,254.4375L32.5,866.6875C32.5,882.0625,45,894.5,60.375,894.5z" />
+							</Path.Data>
+						</Path>
+						<Canvas>
+							<Canvas.Clip>
+								<RectangleGeometry Rect="15,18,2014,903" />
+							</Canvas.Clip>
+							<Path Stroke="#FFBFBFBF" StrokeThickness="8.3125">
+								<Path.Data>
+									<PathGeometry Figures="M60.375,894.5L1976.6875,894.5C1992.0625,894.5,2004.5,882.0625,2004.5,866.6875L2004.5,254.4375C2004.5,239.0625,1992.0625,226.625,1976.6875,226.625L416,226.625 34.75,32.5 222.875,226.625 60.375,226.625C45,226.625,32.5,239.0625,32.5,254.4375L32.5,866.6875C32.5,882.0625,45,894.5,60.375,894.5z" />
+								</Path.Data>
+							</Path>
+						</Canvas>
+					</Canvas>
+				</Viewbox>
+				<Viewbox x:Name="vbHintLL" Width="220" Grid.ColumnSpan="5" Grid.RowSpan="6" Grid.Row="1" Visibility="Visible" Panel.ZIndex="9999999">
+					<Canvas Width="2037" Height="927">
+						<Path Fill="#7F000000">
+							<Path.Data>
+								<PathGeometry Figures="M81.6875,61.5L1998.6875,61.5C2014.0625,61.5,2026.5,74,2026.5,89.3125L2026.5,700.9375C2026.5,716.25,2014.0625,728.75,1998.6875,728.75L437.5,728.75 29.5,908.5 244.25,728.75 81.6875,728.75C66.3125,728.75,53.875,716.25,53.875,700.9375L53.875,89.3125C53.875,74,66.3125,61.5,81.6875,61.5z" />
+							</Path.Data>
+						</Path>
+						<Path Fill="#FFFFFFFF">
+							<Path.Data>
+								<PathGeometry Figures="M60.375,32.5L1976.6875,32.5C1992.0625,32.5,2004.5,45,2004.5,60.375L2004.5,672.625C2004.5,688,1992.0625,700.4375,1976.6875,700.4375L416,700.4375 34.75,894.5 222.875,700.4375 60.375,700.4375C45,700.4375,32.5,688,32.5,672.625L32.5,60.375C32.5,45,45,32.5,60.375,32.5z" />
+							</Path.Data>
+						</Path>
+						<Canvas>
+							<Canvas.Clip>
+								<RectangleGeometry Rect="15,29,2012,881" />
+							</Canvas.Clip>
+							<Path Stroke="#FFBFBFBF" StrokeThickness="8.3125">
+								<Path.Data>
+									<PathGeometry Figures="M60.375,32.5L1976.6875,32.5C1992.0625,32.5,2004.5,45,2004.5,60.375L2004.5,672.625C2004.5,688,1992.0625,700.4375,1976.6875,700.4375L416,700.4375 34.75,894.5 222.875,700.4375 60.375,700.4375C45,700.4375,32.5,688,32.5,672.625L32.5,60.375C32.5,45,45,32.5,60.375,32.5z" />
+								</Path.Data>
+							</Path>
+						</Canvas>
+					</Canvas>
+				</Viewbox>
+				<Grid x:Name="grdStockTickDetails" Height="Auto" Width="240" Panel.ZIndex="99999999">
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="10"/>
+						<ColumnDefinition Width="Auto"/>
+						<ColumnDefinition Width="4"/>
+						<ColumnDefinition Width="160"/>
+						<ColumnDefinition Width="4"/>
+					</Grid.ColumnDefinitions>
+					<Grid.RowDefinitions>
+						<RowDefinition Height="6"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="Auto"/>
+						<RowDefinition Height="30"/>
+					</Grid.RowDefinitions>
 
-    </Grid>
+					<TextBlock Grid.Column="1" Grid.Row="1" Text="Price:" Width="Auto" Height="Auto" Foreground="#FF696969"/>
+					<TextBlock Grid.Column="1" Grid.Row="2" Text="High Bid:" Width="Auto" Height="Auto" Foreground="#FF696969"/>
+					<TextBlock Grid.Column="1" Grid.Row="3" Text="Low Ask:" Width="Auto" Height="Auto" Foreground="#FF696969"/>
+					<TextBlock Grid.Column="1" Grid.Row="4" Text="Time:" Width="Auto" Height="Auto" Foreground="#FF696969"/>
+
+					<TextBlock Grid.Column="3" FontWeight="Bold" x:Name="tbTradePrice" Grid.Row="1" Text="..." Width="Auto" Height="Auto" />
+					<TextBlock Grid.Column="3" Foreground="#FF28287A" x:Name="tbHighestBid" Grid.Row="2" Text="..." Width="Auto" Height="Auto" />
+					<TextBlock Grid.Column="3" Foreground="#FF7A2828" x:Name="tbLowestAsk" Grid.Row="3" Text="..." Width="Auto" Height="Auto" />
+					<StackPanel Grid.Column="3" Grid.Row="4" Orientation="Horizontal">
+						<TextBlock x:Name="tbDate" Text="..." Width="Auto" Height="Auto" />
+						<TextBlock Text=" - " Width="Auto" Height="Auto" Foreground="#FF696969"/>
+						<TextBlock FontWeight="Bold" x:Name="tbTimeHoursMinutesSeconds" Text="..." Width="Auto" Height="Auto" />
+						<TextBlock Text="." Width="Auto" Height="Auto" Foreground="#FF696969"/>
+						<TextBlock x:Name="tbTimeFraction" Text="..." Width="Auto" Height="Auto" />
+					</StackPanel>
+				</Grid>
+			</Canvas>
+		</Canvas>
+
+
+	</Grid>
 
 </UserControl>

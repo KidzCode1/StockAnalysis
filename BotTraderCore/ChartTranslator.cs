@@ -22,6 +22,8 @@ namespace BotTraderCore
 		public List<StockDataPoint> StockDataPoints { get => stockDataPoints; }
 		public DateTime Start => start;
 		public DateTime End => end;
+		public decimal High => high;
+		public decimal Low => low;
 
 		void CalculateBounds()
 		{

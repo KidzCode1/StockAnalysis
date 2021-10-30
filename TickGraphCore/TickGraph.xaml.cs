@@ -51,6 +51,7 @@ namespace TickGraphCore
 		double chartWidthPixels;
 
 		ChartTranslator chartTranslator;
+		bool mouseIsInsideGraph;
 		public TickGraph()
 		{
 			InitializeComponent();
@@ -113,6 +114,44 @@ namespace TickGraphCore
 			return Canvas.GetTop(uIElement) + INT_DotRadius;
 		}
 
+		void ShowCallout(Viewbox viewbox, double dotX, double dotY)
+		{
+			vbHintLL.Visibility = Visibility.Hidden;
+			vbHintLR.Visibility = Visibility.Hidden;
+			vbHintUR.Visibility = Visibility.Hidden;
+			vbHintUL.Visibility = Visibility.Hidden;
+			double calloutOffsetX = 0;
+			double calloutOffsetY = 0;
+
+			if (viewbox == vbHintLL)
+			{
+				vbHintLL.Visibility = Visibility.Visible;
+				calloutOffsetY = -100;
+			}
+			else if (viewbox == vbHintLR)
+			{
+				vbHintLR.Visibility = Visibility.Visible;
+				calloutOffsetY = -100;
+				calloutOffsetX = -220;
+			}
+			else if (viewbox == vbHintUR)
+			{
+				vbHintUR.Visibility = Visibility.Visible;
+				calloutOffsetY = 22;
+				calloutOffsetX = -220;
+			}
+			else if (viewbox == vbHintUL)
+			{
+				vbHintUL.Visibility = Visibility.Visible;
+				calloutOffsetY = 22;
+			}
+
+			Canvas.SetLeft(cvsHints, dotX + calloutOffsetX);
+			Canvas.SetTop(cvsHints, dotY + calloutOffsetY);
+
+			cvsHints.Visibility = Visibility.Visible;
+		}
+
 		public void ShowHintData(double x, double y, StockDataPoint nearestPoint)
 		{
 			string symbol = nearestPoint.Tick.Symbol;
@@ -123,29 +162,23 @@ namespace TickGraphCore
 			tbTradePrice.Text = $"{nearestPoint.Tick.LastTradePrice.GetNum()} {currency}";
 			tbHighestBid.Text = $"{nearestPoint.Tick.HighestBidPrice.GetNum()} {currency}";
 			tbLowestAsk.Text = $"{nearestPoint.Tick.LowestAskPrice.GetNum()} {currency}";
-			tbTime.Text = $"{nearestPoint.Time:yyy MMM dd hh:mm:ss.fff}";
+			tbDate.Text = $"{nearestPoint.Time:yyy MMM dd}";
+			tbTimeHoursMinutesSeconds.Text = $"{nearestPoint.Time:hh:mm:ss}";
+			tbTimeFraction.Text = $"{nearestPoint.Time:fff}";
 			grdStockTickDetails.Visibility = Visibility.Visible;
 			double yPos = y - 34;
 
-			if (OnLeftSide(x))
-			{
-				stockHintPointingRight.Visibility = Visibility.Hidden;
-				stockHintPointingLeft.Visibility = Visibility.Visible;
-				Canvas.SetLeft(stockHintPointingLeft, x);
-				Canvas.SetTop(stockHintPointingLeft, yPos);
-				Canvas.SetLeft(grdStockTickDetails, x + 50);
-				Canvas.SetTop(grdStockTickDetails, yPos + 8);
-			}
+			double dotX = x;
+			double dotY = y;
+			if (dotX < cvsMain.ActualWidth / 2.0)
+				if (dotY < cvsMain.ActualHeight / 2.0)
+					ShowCallout(vbHintUL, dotX, dotY);  // Upper Left
+				else
+					ShowCallout(vbHintLL, dotX, dotY);
+			else if (dotY < cvsMain.ActualHeight / 2.0)
+				ShowCallout(vbHintUR, dotX, dotY);  // Upper Right
 			else
-			{
-				stockHintPointingRight.Visibility = Visibility.Visible;
-				stockHintPointingLeft.Visibility = Visibility.Hidden;
-				double xPos = x - stockHintPointingRight.ActualWidth;
-				Canvas.SetLeft(stockHintPointingRight, xPos);
-				Canvas.SetTop(stockHintPointingRight, yPos);
-				Canvas.SetLeft(grdStockTickDetails, xPos + 13);
-				Canvas.SetTop(grdStockTickDetails, yPos + 8);
-			}
+				ShowCallout(vbHintLR, dotX, dotY);  // Lower Right
 		}
 
 		void ChartPoints(Canvas canvas, List<PointXY> smallMovingAverage, SolidColorBrush brush, int lineThickness)
@@ -206,9 +239,11 @@ namespace TickGraphCore
 
 		private void AddVerticalTimeLine(Point position)
 		{
-			if (chartTranslator == null)
+			if (chartTranslator == null || !mouseIsInsideGraph)
 				return;
 			DateTime time = chartTranslator.GetTime(position.X, chartWidthPixels);
+			if (time >= chartTranslator.End || time <= chartTranslator.Start)
+				return;
 			TextBlock timeTextBlock = new TextBlock();
 			timeTextBlock.Text = time.ToString("dd MMM yyyy - hh:mm:ss.ff");
 
@@ -222,18 +257,22 @@ namespace TickGraphCore
 			}
 			else  // Left-align:
 				Canvas.SetLeft(timeTextBlock, position.X + 5);
-			
+
+			Canvas.SetTop(timeTextBlock, -15);
+
 			Line line = CreateVerticalDashedLineAtX(position.X, verticalTimeLineColor);
 			cvsCoreAdornments.Children.Add(line);
 		}
 
 		private void AddHorizontalPriceLine(Point position)
 		{
-			if (chartTranslator == null)
+			if (chartTranslator == null || !mouseIsInsideGraph)
 				return;
 			decimal price = chartTranslator.GetPrice(position.Y, chartHeightPixels);
+			if (price <= chartTranslator.Low || price >= chartTranslator.High)
+				return;
 			TextBlock priceTextBlock = new TextBlock();
-			priceTextBlock.Text = price.ToString();  // No currency yet here.
+			priceTextBlock.Text = $" {Math.Round(price, 2):C}";  // No currency yet here.
 			AddCoreAdornment(priceTextBlock);
 
 			if (position.Y > chartHeightPixels / 2)
@@ -242,7 +281,7 @@ namespace TickGraphCore
 			}
 			else  // Left-align:
 				Canvas.SetTop(priceTextBlock, position.Y + 5);
-			
+
 			Line line = CreateHorizontalDashedLineAtY(position.Y, horizontalPriceLineColor);
 			cvsCoreAdornments.Children.Add(line);
 		}
@@ -252,6 +291,7 @@ namespace TickGraphCore
 			Line line = CreateLine(x, 0, x, chartHeightPixels);
 			line.IsHitTestVisible = false;
 			line.Stroke = new SolidColorBrush(color);
+			line.Opacity = 0.5;
 			line.StrokeDashArray.Add(5);
 			line.StrokeDashArray.Add(3);
 			return line;
@@ -262,6 +302,7 @@ namespace TickGraphCore
 			Line line = CreateLine(0, y, chartWidthPixels, y);
 			line.IsHitTestVisible = false;
 			line.Stroke = new SolidColorBrush(color);
+			line.Opacity = 0.5;
 			line.StrokeDashArray.Add(5);
 			line.StrokeDashArray.Add(3);
 			return line;
@@ -558,15 +599,38 @@ namespace TickGraphCore
 			AddCoreAdornment(ellipse);
 		}
 
+		void AddPriceMarkers()
+		{
+			const double fontSize = 14;
+			TextBlock txLow = new TextBlock() { Text = $"{chartTranslator.Low:C}", Width = 120, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
+			TextBlock txHigh = new TextBlock() { Text = $"{chartTranslator.High:C}", Width = 120, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
+
+			AddCoreAdornment(txHigh, -130, -fontSize);
+			AddCoreAdornment(txLow, -130, chartHeightPixels - fontSize);
+
+
+			decimal cream = (chartTranslator.High - chartTranslator.Low) / chartTranslator.High * 100;
+			TextBlock txPercentCream = new TextBlock() { Text = $"{Math.Round(cream, 2)}%", Width = 120, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize * 2 };
+			AddCoreAdornment(txPercentCream, -130, chartHeightPixels / 2.0 - fontSize * 2);
+		}
+
+		private void AddCoreAdornment(FrameworkElement element, int left, double top)
+		{
+			Canvas.SetLeft(element, left);
+			Canvas.SetTop(element, top);
+			AddCoreAdornment(element);
+		}
+
 		private void AddCoreAdornments(Point position)
 		{
 			ClearCoreAdornments();
 
-			AddVerticalTimeLine(position);
-			AddHorizontalPriceLine(position);
-
 			if (chartTranslator == null)
 				return;
+
+			AddPriceMarkers();
+			AddVerticalTimeLine(position);
+			AddHorizontalPriceLine(position);
 
 			//DateTime mouseTime = chartTranslator.GetTimeFromX(position.X, chartWidthPixels);
 			Ellipse closestEllipse = GetClosestEllipse(position.X, position.Y);
@@ -666,6 +730,7 @@ namespace TickGraphCore
 			SetSize(cvsBackground);
 			SetSize(rctBackground);
 			SetSize(cvsMain);
+			SetSize(cvsAllHints);
 			SetSize(cvsCoreAdornments);
 			SetSize(cvsCustomAdornments);
 			SetSize(cvsSelection);
@@ -708,6 +773,16 @@ namespace TickGraphCore
 		{
 			cvsCoreAdornments.Visibility = Visibility.Visible;
 			cvsHints.Visibility = Visibility.Visible;
+		}
+
+		private void cvsBackground_MouseEnter(object sender, MouseEventArgs e)
+		{
+			mouseIsInsideGraph = true;
+		}
+
+		private void cvsBackground_MouseLeave(object sender, MouseEventArgs e)
+		{
+			mouseIsInsideGraph = false;
 		}
 	}
 }
