@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:tickGraphCore="clr-namespace:TickGraphCore;assembly=TickGraphCore"
         mc:Ignorable="d"
-        Title="FrmTestGenerator" Height="800" Width="800">
+        Title="FrmTestGenerator" Height="757.202" Width="879.012">
     <Window.Resources>
         <ContextMenu x:Key="AddVariableMenu" ContextMenuOpening="ContextMenu_ContextMenuOpening" Opened="ContextMenu_Opened">
             <MenuItem Header="New Variable:" IsEnabled="False" />
@@ -15,7 +15,7 @@
             <MenuItem x:Name="miDataRange" Header="Data Range" Click="miDataRange_Click"/>
         </ContextMenu>
     </Window.Resources>
-    <StackPanel Orientation="Vertical">
+    <StackPanel Orientation="Vertical" Margin="80,0,0,0" >
         <StackPanel Orientation="Horizontal">
             <tickGraphCore:TickGraph x:Name="tickGraph" Height="600" ContextMenu="{StaticResource AddVariableMenu}">
 

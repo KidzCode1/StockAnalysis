@@ -130,7 +130,7 @@ namespace BotTraderCore
 
 		public StockDataPoint AddStockPosition(CustomTick data)
 		{
-			 StockDataPoint stockDataPoint = new StockDataPoint(data);
+			StockDataPoint stockDataPoint = new StockDataPoint(data);
 			if (stockDataPoints.Count >= 2)
 			{
 				//RemoveMatchingDataPoints(data, stockDataPoint);
@@ -358,6 +358,143 @@ namespace BotTraderCore
 			return result;
 		}
 
+		int GetIndexOfPointOnOrBefore(List<StockDataPoint> allStockDataPoints, DateTime time, int leftStartIndex = 0)
+		{
+			StockDataPoint lastPreviousDataPoint = null;
+			int lastPreviousIndex = -1;
+
+			int left = 0;
+			int right = allStockDataPoints.Count - 1;
+			while (left <= right)
+			{
+				int middle = left + (right - left) / 2;
+
+				StockDataPoint middleDataPoint = allStockDataPoints[middle];
+				// Check if x is present at mid 
+				if (middleDataPoint.Time == time)
+					return middle;
+
+				// If x greater, ignore left half 
+				if (middleDataPoint.Time < time)
+				{
+					if (lastPreviousDataPoint == null || lastPreviousDataPoint.Time < middleDataPoint.Time)
+					{
+						lastPreviousDataPoint = middleDataPoint;
+						lastPreviousIndex = middle;
+					}
+
+					left = middle + 1;
+				}
+				else  // If x is smaller, ignore right half.
+					right = middle - 1;
+			}
+
+			// if we reach here, then element was not present. Return the index of the closest data point just before this one.
+			return lastPreviousIndex;
+		}
+
+		/// <summary>
+		/// Returns a single point that represents the specified range (an average of all data points in that space)
+		/// </summary>
+		/// <param name="allStockDataPoints"></param>
+		/// <param name="startSegment"></param>
+		/// <param name="endSegment"></param>
+		/// <returns></returns>
+		StockDataPoint GetPointInRange(List<StockDataPoint> allStockDataPoints, DateTime startSegment, DateTime endSegment, ref int leftStartIndex)
+		{
+			int startIndex = GetIndexOfPointOnOrBefore(allStockDataPoints, startSegment, leftStartIndex);
+
+			if (startIndex == -1)
+				return null;
+
+			// TODO: We need to multiply these values by the actual length of this data point (until the next data point is found)
+			// The length of the first value is the time of the second tick minus the startSegment.
+			// The length of the last value is the endSegment minus the time of the last tick.
+			// All other tick lengths are the time of that tick minus the time of the last tick.
+
+			decimal totalLastTradePrice = 0;
+			decimal totalHighestBidPrice = 0;
+			decimal totalLowestAskPrice = 0;
+			decimal totalDurationSeconds = 0;
+			int index = startIndex;
+			StockDataPoint stockDataPoint = allStockDataPoints[index];
+			while (index < allStockDataPoints.Count)
+			{
+				if (stockDataPoint.Time > endSegment)
+					break;
+
+				index++;
+
+				DateTime startTime;
+				if (index == startIndex) // This is the first point.
+					startTime = startSegment;
+				else
+					startTime = stockDataPoint.Time;
+
+				DateTime endTime;
+				if (index < allStockDataPoints.Count)
+				{
+					StockDataPoint nextStockDataPoint = allStockDataPoints[index];
+					endTime = nextStockDataPoint.Time;
+					if (endTime > endSegment)
+						endTime = endSegment;
+					else
+						leftStartIndex++;
+				}
+				else  // This is the last point
+					endTime = endSegment;
+
+				decimal durationSeconds = (decimal)(endTime - startTime).TotalSeconds;
+
+				totalDurationSeconds += durationSeconds;
+
+				CustomTick tick = stockDataPoint.Tick;
+				totalLastTradePrice += durationSeconds * tick.LastTradePrice;
+				totalHighestBidPrice += durationSeconds * tick.HighestBidPrice;
+				totalLowestAskPrice += durationSeconds * tick.LowestAskPrice;
+			}
+
+			decimal lastTradePrice = totalLastTradePrice / totalDurationSeconds;
+			decimal highestBidPrice = totalHighestBidPrice / totalDurationSeconds;
+			decimal lowestAskPrice = totalLowestAskPrice / totalDurationSeconds;
+			return new StockDataPoint(new CustomTick() { LastTradePrice = lastTradePrice, HighestBidPrice = highestBidPrice, LowestAskPrice = lowestAskPrice }) { Time = startSegment };
+		}
+
+		public List<StockDataPoint> GetAllStockDataPoints(int dataDensity)
+		{
+			if (dataDensity == 0)
+				return null;
+			List<StockDataPoint> results = new List<StockDataPoint>();
+			List<StockDataPoint> allStockDataPoints = GetAllStockDataPoints();
+			TimeSpan dataTimeSpan = TimeSpan.FromTicks((End - Start).Ticks / dataDensity);
+			DateTime startSegment = Start;
+			DateTime endSegment = Start + dataTimeSpan;
+			int leftStartIndex = 0;
+			do
+			{
+				StockDataPoint dp = GetPointInRange(allStockDataPoints, startSegment, endSegment, ref leftStartIndex);
+				if (dp == null)
+					break;
+
+				results.Add(dp);
+				startSegment += dataTimeSpan;
+				endSegment += dataTimeSpan;
+
+				if (leftStartIndex < allStockDataPoints.Count - 1)
+				{
+					StockDataPoint nextPoint = allStockDataPoints[leftStartIndex + 1];
+					while (startSegment < nextPoint.Time)  // We are just going to keep adding the same point until the startSegment equals or is greater than the nextPoint.
+					{
+						results.Add(dp);
+						startSegment += dataTimeSpan;
+						endSegment += dataTimeSpan;
+					}
+				}
+			} while (results.Count < dataDensity);
+
+			return results;
+		}
+
 		public void SetStockDataPoints(List<StockDataPoint> points)
 		{
 			if (points.Count == 0)
@@ -369,6 +506,7 @@ namespace BotTraderCore
 			end = points[points.Count - 1].Time;
 			CalculateBounds();
 		}
+
 		public void Clear()
 		{
 			lock (stockDataPointsLock)
@@ -410,4 +548,46 @@ namespace BotTraderCore
 			System.IO.File.WriteAllText(fullPathToFile, serializeObject);
 		}
 	}
+
+	//public class StockDataPointTimeComparer : IComparer<StockDataPoint>
+	//{
+	//	public int Compare(StockDataPoint x, StockDataPoint y)
+	//	{
+	//		if (x == null)
+	//		{
+	//			if (y == null)
+	//			{
+	//				// If x is null and y is null, they're
+	//				// equal.
+	//				return 0;
+	//			}
+	//			else
+	//			{
+	//				// If x is null and y is not null, y
+	//				// is greater.
+	//				return -1;
+	//			}
+	//		}
+	//		else
+	//		{
+	//			// If x is not null...
+	//			//
+	//			if (y == null)
+	//			// ...and y is null, x is greater.
+	//			{
+	//				return 1;
+	//			}
+	//			else
+	//			{
+	//				if (x.Time == y.Time)
+	//					return 0;
+
+	//				if (x.Time > y.Time)
+	//					return 1;
+
+	//				return -1;
+	//			}
+	//		}
+	//	}
+	//}
 }

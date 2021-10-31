@@ -47,11 +47,13 @@ namespace TickGraphCore
 
 		const double INT_DotDiameter = 6;
 		const double INT_DotRadius = INT_DotDiameter / 2;
+		
 		double chartHeightPixels;
 		double chartWidthPixels;
 
 		ChartTranslator chartTranslator;
 		bool mouseIsInsideGraph;
+		List<StockDataPoint> denseDataPoints;
 		public TickGraph()
 		{
 			InitializeComponent();
@@ -441,10 +443,6 @@ namespace TickGraphCore
 
 		public void DrawGraph(List<CustomAdornment> customAdornments = null)
 		{
-			double lastX = double.MinValue;
-			double lastY = double.MinValue;
-
-			bool alreadyDrawnAtLeastOnePoint = false;
 
 			Clear();
 
@@ -452,6 +450,29 @@ namespace TickGraphCore
 				return;
 
 			List<StockDataPoint> stockDataPoints = chartTranslator.GetAllStockDataPoints();
+			DrawDataPoints(stockDataPoints);
+			DrawDataPoints(denseDataPoints);
+
+			AddCoreAdornments(lastMousePosition);
+
+			// TODO: if the mouse is down...
+			//if (mouseIsDown (Selection is active))
+			//Selection.Cursor = chartTranslator.GetTimeFromX(lastMousePosition.X);
+			//Selection.Changing();
+
+			UpdateSelection();
+			DrawAnalysisCharts();
+			DrawCustomAdornments(customAdornments);
+		}
+
+		private void DrawDataPoints(List<StockDataPoint> stockDataPoints)
+		{
+			if (stockDataPoints == null)
+				return;
+
+			bool alreadyDrawnAtLeastOnePoint = false;
+			double lastX = double.MinValue;
+			double lastY = double.MinValue;
 			foreach (StockDataPoint stockDataPoint in stockDataPoints)
 			{
 				double x = chartTranslator.GetStockPositionX(stockDataPoint.Time, chartWidthPixels);
@@ -468,17 +489,6 @@ namespace TickGraphCore
 				lastX = x;
 				lastY = y;
 			}
-
-			AddCoreAdornments(lastMousePosition);
-
-			// TODO: if the mouse is down...
-			//if (mouseIsDown (Selection is active))
-			//Selection.Cursor = chartTranslator.GetTimeFromX(lastMousePosition.X);
-			//Selection.Changing();
-
-			UpdateSelection();
-			DrawAnalysisCharts();
-			DrawCustomAdornments(customAdornments);
 		}
 
 		void UpdateSelection()
@@ -602,16 +612,22 @@ namespace TickGraphCore
 		void AddPriceMarkers()
 		{
 			const double fontSize = 14;
-			TextBlock txLow = new TextBlock() { Text = $"{chartTranslator.Low:C}", Width = 120, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
-			TextBlock txHigh = new TextBlock() { Text = $"{chartTranslator.High:C}", Width = 120, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
+			const int leftMargin = -130;
+			const int leftItemWidth = -leftMargin - 10;
+			TextBlock txLow = new TextBlock() { Text = $"{chartTranslator.Low:C}", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
+			TextBlock txHigh = new TextBlock() { Text = $"{chartTranslator.High:C}", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
 
-			AddCoreAdornment(txHigh, -130, -fontSize);
-			AddCoreAdornment(txLow, -130, chartHeightPixels - fontSize);
+			AddCoreAdornment(txHigh, leftMargin, -fontSize);
+			AddCoreAdornment(txLow, leftMargin, chartHeightPixels - fontSize);
 
 
-			decimal cream = (chartTranslator.High - chartTranslator.Low) / chartTranslator.High * 100;
-			TextBlock txPercentCream = new TextBlock() { Text = $"{Math.Round(cream, 2)}%", Width = 120, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize * 2 };
-			AddCoreAdornment(txPercentCream, -130, chartHeightPixels / 2.0 - fontSize * 2);
+			decimal amountInView = chartTranslator.High - chartTranslator.Low;
+			decimal percentInView = amountInView / chartTranslator.High * 100;
+			TextBlock txPercentInView = new TextBlock() { Text = $"{Math.Round(percentInView, 2)}%", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize * 2 };
+			double amountFontSize = fontSize;
+			TextBlock txAmountInView = new TextBlock() { Text = $"(${Math.Round(amountInView, 2)})", Width = leftItemWidth, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontSize = amountFontSize };
+			AddCoreAdornment(txPercentInView, leftMargin, chartHeightPixels / 2.0 - fontSize * 2 - amountFontSize / 3);
+			AddCoreAdornment(txAmountInView, leftMargin + 20, chartHeightPixels / 2.0 + amountFontSize / 4);
 		}
 
 		private void AddCoreAdornment(FrameworkElement element, int left, double top)
@@ -785,6 +801,22 @@ namespace TickGraphCore
 		private void cvsBackground_MouseLeave(object sender, MouseEventArgs e)
 		{
 			mouseIsInsideGraph = false;
+		}
+
+		void ClearDataDensityPoints()
+		{
+			denseDataPoints = null;
+		}
+
+		private void sldDataDensity_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+		{
+			if (sldDataDensity.Value == 0)
+			{
+				ClearDataDensityPoints();
+				return;
+			}
+			denseDataPoints = chartTranslator.GetAllStockDataPoints((int)Math.Round(sldDataDensity.Value));
+			DrawGraph();
 		}
 	}
 }

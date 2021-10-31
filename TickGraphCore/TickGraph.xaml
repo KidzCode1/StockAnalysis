@@ -30,8 +30,8 @@
 			</Canvas>
 		</Viewbox>
 	</UserControl.Resources>
-	<Grid x:Name="grdContainer" Height="700" Width="600" Margin="15" >
-		<Canvas x:Name="cvsBackground" Height="700" Width="600" MouseEnter="cvsBackground_MouseEnter" MouseLeave="cvsBackground_MouseLeave">
+	<Grid x:Name="grdContainer" Height="770" Width="600" Margin="15" >
+		<Canvas x:Name="cvsBackground" Height="700" Width="600" Canvas.Left="70" MouseEnter="cvsBackground_MouseEnter" MouseLeave="cvsBackground_MouseLeave">
 			<!--This is so the preview mouse events get sent.-->
 			<Rectangle x:Name="rctBackground" Height="700" Width="600" Stroke="#FFBFBFFF" Fill="#01ffffff"></Rectangle>
 			<Viewbox x:Name="vbUpDownArrows" Width="45" Canvas.Left="-70">
@@ -54,20 +54,20 @@
 			</Viewbox>
 
 		</Canvas>
-		<Canvas x:Name="cvsMain" Height="700" Width="600">
+		<Canvas x:Name="cvsMain" Height="700" Width="600" Canvas.Left="70" >
 
 		</Canvas>
-		<Canvas x:Name="cvsCoreAdornments" Height="700" Width="600">
+		<Canvas x:Name="cvsCoreAdornments" Height="700" Width="600" Canvas.Left="70">
 		</Canvas>
-		<Canvas x:Name="cvsCustomAdornments" Height="700" Width="600">
+		<Canvas x:Name="cvsCustomAdornments" Height="700" Width="600" Canvas.Left="70">
 		</Canvas>
-		<Canvas x:Name="cvsSelection" Height="700" Width="600">
-		</Canvas>
-
-		<Canvas x:Name="cvsAnalysis" Height="700" Width="600" Margin="0, 300, 0, 0">
+		<Canvas x:Name="cvsSelection" Height="700" Width="600" Canvas.Left="70">
 		</Canvas>
 
-		<Canvas x:Name="cvsAllHints" Height="700" Width="600">
+		<Canvas x:Name="cvsAnalysis" Height="700" Width="600" Margin="0, 300, 0, 0" Canvas.Left="70">
+		</Canvas>
+
+		<Canvas x:Name="cvsAllHints" Height="700" Width="600" Canvas.Left="70">
 			<Canvas x:Name="cvsHints" Visibility="Visible">
 				<Viewbox x:Name="vbHintUR" Width="220" Grid.ColumnSpan="5" Grid.RowSpan="6" Grid.Row="1" Canvas.Top="-22" Visibility="Hidden" Panel.ZIndex="9999999">
 					<Canvas Width="2037" Height="927">
@@ -201,7 +201,9 @@
 			</Canvas>
 		</Canvas>
 
-
+		<Slider x:Name="sldDataDensity" ValueChanged="sldDataDensity_ValueChanged" Value="0" Minimum="0" Maximum="800" Margin="0, -30, 0, 0">
+			
+		</Slider>
 	</Grid>
 
 </UserControl>
