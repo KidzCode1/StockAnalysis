@@ -723,6 +723,8 @@ namespace TickGraphCore
 			double horizontalMargin = grdContainer.Margin.Left + grdContainer.Margin.Right;
 			double verticalMargin = grdContainer.Margin.Top + grdContainer.Margin.Bottom;
 
+			Canvas.SetTop(vbUpDownArrows, e.NewSize.Height / 2 - 185);
+
 			chartWidthPixels = e.NewSize.Width - horizontalMargin;
 			chartHeightPixels = e.NewSize.Height - verticalMargin - 100;
 
