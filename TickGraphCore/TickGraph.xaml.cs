@@ -161,9 +161,9 @@ namespace TickGraphCore
 			int dashIndex = symbol.IndexOf("-");
 			if (dashIndex >= 0)
 				currency = symbol.Substring(dashIndex + 1);
-			tbTradePrice.Text = $"{nearestPoint.Tick.LastTradePrice.GetNum()} {currency}";
-			tbHighestBid.Text = $"{nearestPoint.Tick.HighestBidPrice.GetNum()} {currency}";
-			tbLowestAsk.Text = $"{nearestPoint.Tick.LowestAskPrice.GetNum()} {currency}";
+			tbTradePrice.Text = $"{nearestPoint.Tick.LastTradePrice.GetNum(9)} {currency}";
+			tbHighestBid.Text = $"{nearestPoint.Tick.HighestBidPrice.GetNum(9)} {currency}";
+			tbLowestAsk.Text = $"{nearestPoint.Tick.LowestAskPrice.GetNum(9)} {currency}";
 			tbDate.Text = $"{nearestPoint.Time:yyy MMM dd}";
 			tbTimeHoursMinutesSeconds.Text = $"{nearestPoint.Time:hh:mm:ss}";
 			tbTimeFraction.Text = $"{nearestPoint.Time:fff}";
@@ -449,9 +449,21 @@ namespace TickGraphCore
 			if (chartTranslator == null)
 				return;
 
-			List<StockDataPoint> stockDataPoints = chartTranslator.GetAllStockDataPoints();
-			DrawDataPoints(stockDataPoints);
-			DrawDataPoints(denseDataPoints);
+			int dataDensity = (int)Math.Round(sldDataDensity.Value);
+
+			if (dataDensity > 0)
+			{
+				if (denseDataPoints == null || chartTranslator.ChangedSinceLastDataDensityQuery)
+					denseDataPoints = chartTranslator.GetStockDataPointsAcrossSegments(dataDensity);
+
+				DrawDataPoints(denseDataPoints);
+			}
+			else
+			{
+				StockDataPointsSnapshot stockDataPointSnapshot = chartTranslator.GetStockDataPointsSnapshot();
+				DrawDataPoints(stockDataPointSnapshot.StockDataPoints);
+			}
+
 
 			AddCoreAdornments(lastMousePosition);
 
@@ -815,7 +827,7 @@ namespace TickGraphCore
 				ClearDataDensityPoints();
 				return;
 			}
-			denseDataPoints = chartTranslator.GetAllStockDataPoints((int)Math.Round(sldDataDensity.Value));
+			denseDataPoints = chartTranslator.GetStockDataPointsAcrossSegments((int)Math.Round(sldDataDensity.Value));
 			DrawGraph();
 		}
 	}

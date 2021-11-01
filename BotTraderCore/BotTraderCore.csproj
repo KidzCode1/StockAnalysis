@@ -141,6 +141,7 @@
     <Compile Include="PointXY.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="StockDataPoint.cs" />
+    <Compile Include="StockDataPointsSnapshot.cs" />
     <Compile Include="TestData.cs" />
     <Compile Include="TickRange.cs" />
   </ItemGroup>
