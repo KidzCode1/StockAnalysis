@@ -174,8 +174,11 @@ namespace BotTraderCore
 
 				if (IsHighOrLow(removed))  // This data point may have been defining our high or low
 					CalculateBounds();  // We need to recalculate everything.
-				else  // Only the start has changed...
+				else  // Only the start and end have changed...
+				{
 					start = StockDataPoints[0].Time;
+					AdjustBounds(stockDataPoint);
+				}
 			}
 			else if (StockDataPoints.Count < 10)
 				CalculateBounds();
@@ -579,8 +582,8 @@ namespace BotTraderCore
 
 			lock (stockDataPointsLock)
 				StockDataPoints.AddRange(points);
-			start = points[0].Time;
-			end = points[points.Count - 1].Time;
+			//start = points[0].Time;
+			//end = points[points.Count - 1].Time;
 			CalculateBounds();
 		}
 
