@@ -93,23 +93,36 @@ namespace BotTraderCore
 				high = tick.LastTradePrice;
 		}
 
-		public double GetStockPositionX(DateTime time, double chartWidthPixels)
+		/// <summary>
+		/// Call before adding a new point to see if last two trailing ticks match this one (comparing LastTradePrice only).
+		/// This method works directly on stockDataPoints so make sure this call is protected by a lock on stockDataPointsLock
+		/// before calling.
+		/// </summary>
+		/// <param name="newStockDataPoint">The new StockDataPoint we're about to add.</param>
+		private void RemoveMatchingDataPoints(StockDataPoint newStockDataPoint)
 		{
-			if (time == DateTime.MinValue)
-				return 0d;
+			if (stockDataPoints.Count < 2)
+				return;
+			int lastIndex = stockDataPoints.Count - 1;
+			StockDataPoint lastPointToRemove = stockDataPoints[lastIndex];
 
-			if (time == DateTime.MaxValue)
-				return chartWidthPixels;
+			if (lastPointToRemove.Tick.LastTradePrice == newStockDataPoint.Tick.LastTradePrice)
+			{
+				if (stockDataPoints[lastIndex - 1].Tick.LastTradePrice == newStockDataPoint.Tick.LastTradePrice)  // Last two points, plus this one are the same. We can remove the middle point.
+				{
+					// Track number of points removed... 
+					newStockDataPoint.Weight += lastPointToRemove.Weight;
 
-			TimeSpan distanceToPoint = time - start;
-			TimeSpan totalSpanAcross = end - start;
-			double totalSecondsAcross = totalSpanAcross.TotalSeconds;
-			if (totalSecondsAcross == 0)
-				return 0;
-			double secondsToPoint = distanceToPoint.TotalSeconds;
-			double percentAcross = secondsToPoint / totalSecondsAcross;
+					// Keep lowest ask and highest bid across all duplicate points we remove...
+					if (lastPointToRemove.Tick.LowestAskPrice < newStockDataPoint.Tick.LowestAskPrice)
+						newStockDataPoint.Tick.LowestAskPrice = lastPointToRemove.Tick.LowestAskPrice;
+					if (lastPointToRemove.Tick.HighestBidPrice > newStockDataPoint.Tick.HighestBidPrice)
+						newStockDataPoint.Tick.HighestBidPrice = lastPointToRemove.Tick.HighestBidPrice;
 
-			return percentAcross * chartWidthPixels;
+					// Remove the duplicate point...
+					stockDataPoints.RemoveAt(lastIndex);
+				}
+			}
 		}
 
 		public DateTime GetTime(double x, double chartWidthPixels)
@@ -141,6 +154,25 @@ namespace BotTraderCore
 			return high - totalPriceDelta;
 		}
 
+		public double GetStockPositionX(DateTime time, double chartWidthPixels)
+		{
+			if (time == DateTime.MinValue)
+				return 0d;
+
+			if (time == DateTime.MaxValue)
+				return chartWidthPixels;
+
+			TimeSpan distanceToPoint = time - start;
+			TimeSpan totalSpanAcross = end - start;
+			double totalSecondsAcross = totalSpanAcross.TotalSeconds;
+			if (totalSecondsAcross == 0)
+				return 0;
+			double secondsToPoint = distanceToPoint.TotalSeconds;
+			double percentAcross = secondsToPoint / totalSecondsAcross;
+
+			return percentAcross * chartWidthPixels;
+		}
+
 		public double GetStockPositionY(decimal price, double chartHeightPixels)
 		{
 			if (price == decimal.MinValue)
@@ -152,7 +184,7 @@ namespace BotTraderCore
 			decimal amountAboveBottom = price - low;
 			decimal chartHeightDollars = high - low;
 
-			// ![](99A33C7E4008781D520BA988900A3B50.png;;;0.01945,0.01945)
+			// ![](99A33C7E4008781D520BA988900A3B50.png;;;0.01110,0.01110)
 
 			decimal percentOfChartHeightFromBottom = amountAboveBottom / chartHeightDollars;
 			double distanceFromBottomPixels = (double)percentOfChartHeightFromBottom * chartHeightPixels;
@@ -164,9 +196,12 @@ namespace BotTraderCore
 		{
 			StockDataPoint stockDataPoint = new StockDataPoint(data);
 			lock (stockDataPointsLock)
+			{
+				RemoveMatchingDataPoints(stockDataPoint);
 				StockDataPoints.Add(stockDataPoint);
+			}
 
-			if (StockDataPoints.Count > 3000)
+			if (StockDataPoints.Count > 1000)  // Only keep 1000 data points in history.
 			{
 				CustomTick removed = StockDataPoints[0].Tick;
 				lock (stockDataPointsLock)
@@ -202,25 +237,6 @@ namespace BotTraderCore
 			return first.LastTradePrice == High || first.LastTradePrice == Low;
 		}
 
-		private void RemoveMatchingDataPoints(CustomTick data, StockDataPoint stockDataPoint)
-		{
-			int lastIndex = stockDataPoints.Count - 1;
-			StockDataPoint lastPoint = stockDataPoints[lastIndex];
-			StockDataPoint secondToLastPoint = stockDataPoints[lastIndex - 1];
-			if (lastPoint.Tick.LastTradePrice == secondToLastPoint.Tick.LastTradePrice)
-			{
-				if (lastPoint.Tick.LastTradePrice == data.LastTradePrice)
-				{
-					// Last two points, plus this one are the same. We can remove the middle point.
-					lock (stockDataPointsLock)
-					{
-						// Since we are removing data points for efficiency, we have to weigh down the new point we are adding so our SMA still works. 
-						stockDataPoint.Weight += lastPoint.Weight;
-						stockDataPoints.RemoveAt(lastIndex);
-					}
-				}
-			}
-		}
 
 		//public void AddMovingAverage(double spanDurationSeconds, Canvas canvas, Brush lineColor)
 		//{
@@ -372,10 +388,10 @@ namespace BotTraderCore
 		{
 			TickRange tickRange = new TickRange()
 			{
-				Start = start,
-				End = end,
 				DataPoints = new List<StockDataPoint>(),
 			};
+
+			List<StockDataPoint> dataPoints = tickRange.DataPoints;
 
 			StockDataPoint lastDataPoint = null;
 			StockDataPoint lowestSoFar = null;
@@ -384,14 +400,14 @@ namespace BotTraderCore
 			lock (stockDataPointsLock)
 				foreach (StockDataPoint stockDataPoint in StockDataPoints)
 					if (stockDataPoint.Time > end)
-						return tickRange;
+						break;
 					else if (stockDataPoint.Time >= start)   // We can work with this data!
 					{
 						if (lastDataPoint != null)  // We have just entered the start of the desired range.
 						{
 							tickRange.ValueBeforeRangeStarts = lastDataPoint;
 						}
-						tickRange.DataPoints.Add(stockDataPoint);
+						dataPoints.Add(stockDataPoint);
 						if (lowestSoFar == null)
 							lowestSoFar = stockDataPoint;
 						else if (stockDataPoint.Tick.LastTradePrice < lowestSoFar.Tick.LastTradePrice)
@@ -409,16 +425,22 @@ namespace BotTraderCore
 
 			tickRange.Low = lowestSoFar;
 			tickRange.High = highestSoFar;
+			if (dataPoints.Count > 0)
+			{
+				tickRange.Start = dataPoints[0].Time;
+				tickRange.End = dataPoints[dataPoints.Count - 1].Time;
+			}
+
 			return tickRange;
 		}
 
 		public StockDataPointsSnapshot GetStockDataPointsSnapshot()
 		{
 			StockDataPointsSnapshot result;
-			
+
 			lock (stockDataPointsLock)
 				result = new StockDataPointsSnapshot(StockDataPoints, start, end, low, high);
-			
+
 			return result;
 		}
 

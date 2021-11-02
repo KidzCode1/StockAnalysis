@@ -47,7 +47,8 @@ namespace TickGraphCore
 
 		const double INT_DotDiameter = 6;
 		const double INT_DotRadius = INT_DotDiameter / 2;
-		
+		const int INT_MinDataDensity = 8;
+
 		double chartHeightPixels;
 		double chartWidthPixels;
 
@@ -451,7 +452,7 @@ namespace TickGraphCore
 
 			int dataDensity = (int)Math.Round(sldDataDensity.Value);
 
-			if (dataDensity > 0)
+			if (dataDensity > INT_MinDataDensity)
 			{
 				if (denseDataPoints == null || chartTranslator.ChangedSinceLastDataDensityQuery)
 					denseDataPoints = chartTranslator.GetStockDataPointsAcrossSegments(dataDensity);
@@ -822,9 +823,10 @@ namespace TickGraphCore
 
 		private void sldDataDensity_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
 		{
-			if (sldDataDensity.Value == 0)
+			if (sldDataDensity.Value < INT_MinDataDensity)
 			{
 				ClearDataDensityPoints();
+				DrawGraph();
 				return;
 			}
 			denseDataPoints = chartTranslator.GetStockDataPointsAcrossSegments((int)Math.Round(sldDataDensity.Value));

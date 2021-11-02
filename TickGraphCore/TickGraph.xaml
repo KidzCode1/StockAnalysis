@@ -30,10 +30,10 @@
 			</Canvas>
 		</Viewbox>
 	</UserControl.Resources>
-	<Grid x:Name="grdContainer" Height="770" Width="600" Margin="15" >
-		<Canvas x:Name="cvsBackground" Height="700" Width="600" Canvas.Left="70" MouseEnter="cvsBackground_MouseEnter" MouseLeave="cvsBackground_MouseLeave">
+	<Grid x:Name="grdContainer" Height="770" Width="600" Margin="15" MouseEnter="cvsBackground_MouseEnter" MouseLeave="cvsBackground_MouseLeave">
+		<Canvas x:Name="cvsBackground" Height="700" Width="600" Canvas.Left="70">
 			<!--This is so the preview mouse events get sent.-->
-			<Rectangle x:Name="rctBackground" Height="700" Width="600" Stroke="#FFBFBFFF" Fill="#01ffffff"></Rectangle>
+			<Rectangle x:Name="rctBackground" Height="700" Width="600" Stroke="#FFBFBFFF" Fill="#01ffffff" ></Rectangle>
 			<Viewbox x:Name="vbUpDownArrows" Width="45" Canvas.Left="-70">
 				<Canvas Width="289" Height="1474">
 					<Polygon Points="272.5,144.5 208.5,144.5 208.5,470.5 80.5,470.5 80.5,144.5 16.5,144.5 144.5,16.5" FillRule="EvenOdd" Fill="#FFDAE3F3" Stroke="{x:Null}" />
