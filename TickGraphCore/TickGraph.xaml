@@ -5,7 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:TickGraphCore"
              mc:Ignorable="d" 
-             d:DesignHeight="700" d:DesignWidth="600" Background="White" PreviewMouseDown="UserControl_PreviewMouseDown" PreviewMouseMove="UserControl_PreviewMouseMove" PreviewMouseUp="UserControl_PreviewMouseUp" SizeChanged="UserControl_SizeChanged">
+             d:DesignHeight="700" d:DesignWidth="600" MinHeight="140" MinWidth="140" Background="White" PreviewMouseDown="UserControl_PreviewMouseDown" PreviewMouseMove="UserControl_PreviewMouseMove" PreviewMouseUp="UserControl_PreviewMouseUp" SizeChanged="UserControl_SizeChanged">
 	<UserControl.Resources>
 		<Viewbox x:Key="iconTimePoint" Width="36" x:Shared="false" >
 			<Canvas Width="198" Height="213">
@@ -30,11 +30,15 @@
 			</Canvas>
 		</Viewbox>
 	</UserControl.Resources>
-	<Grid x:Name="grdContainer" Height="770" Width="600" Margin="15" MouseEnter="cvsBackground_MouseEnter" MouseLeave="cvsBackground_MouseLeave">
-		<Canvas x:Name="cvsBackground" Height="700" Width="600" Canvas.Left="70">
+	<Grid x:Name="grdContainer" Margin="15" MouseEnter="cvsBackground_MouseEnter" MouseLeave="cvsBackground_MouseLeave">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="20"/>
+            <ColumnDefinition/>
+        </Grid.ColumnDefinitions>
+		<Canvas x:Name="cvsBackground" Height="700" Width="600" Grid.Column="1" >
 			<!--This is so the preview mouse events get sent.-->
 			<Rectangle x:Name="rctBackground" Height="700" Width="600" Stroke="#FFBFBFFF" Fill="#01ffffff" ></Rectangle>
-			<Viewbox x:Name="vbUpDownArrows" Width="45" Canvas.Left="-70">
+			<Viewbox x:Name="vbUpDownArrows" Width="45" Canvas.Left="-50">
 				<Canvas Width="289" Height="1474">
 					<Polygon Points="272.5,144.5 208.5,144.5 208.5,470.5 80.5,470.5 80.5,144.5 16.5,144.5 144.5,16.5" FillRule="EvenOdd" Fill="#FFDAE3F3" Stroke="{x:Null}" />
 					<Canvas>
@@ -54,20 +58,20 @@
 			</Viewbox>
 
 		</Canvas>
-		<Canvas x:Name="cvsMain" Height="700" Width="600" Canvas.Left="70" >
+        <Canvas x:Name="cvsMain" Height="700" Width="600" Grid.Column="1" >
 
 		</Canvas>
-		<Canvas x:Name="cvsCoreAdornments" Height="700" Width="600" Canvas.Left="70">
+        <Canvas x:Name="cvsCoreAdornments" Height="700" Width="600" Grid.Column="1">
 		</Canvas>
-		<Canvas x:Name="cvsCustomAdornments" Height="700" Width="600" Canvas.Left="70">
+        <Canvas x:Name="cvsCustomAdornments" Height="700" Width="600" Grid.Column="1">
 		</Canvas>
-		<Canvas x:Name="cvsSelection" Height="700" Width="600" Canvas.Left="70">
-		</Canvas>
-
-		<Canvas x:Name="cvsAnalysis" Height="700" Width="600" Margin="0, 300, 0, 0" Canvas.Left="70">
+        <Canvas x:Name="cvsSelection" Height="700" Width="600" Grid.Column="1">
 		</Canvas>
 
-		<Canvas x:Name="cvsAllHints" Height="700" Width="600" Canvas.Left="70">
+        <Canvas x:Name="cvsAnalysis" Height="700" Width="600" Margin="0, 300, 0, 0" Grid.Column="1">
+		</Canvas>
+
+        <Canvas x:Name="cvsAllHints" Height="700" Width="600" Grid.Column="1">
 			<Canvas x:Name="cvsHints" Visibility="Visible">
 				<Viewbox x:Name="vbHintUR" Width="220" Grid.ColumnSpan="5" Grid.RowSpan="6" Grid.Row="1" Canvas.Top="-22" Visibility="Hidden" Panel.ZIndex="9999999">
 					<Canvas Width="2037" Height="927">
@@ -201,7 +205,7 @@
 			</Canvas>
 		</Canvas>
 
-		<Slider x:Name="sldDataDensity" ValueChanged="sldDataDensity_ValueChanged" Value="0" Minimum="0" Maximum="800" Margin="0, -30, 0, 0">
+		<Slider x:Name="sldDataDensity" ValueChanged="sldDataDensity_ValueChanged" Value="0" Minimum="0" Maximum="800" Margin="0, -30, 0, 0" Grid.Column="1">
 			
 		</Slider>
 	</Grid>

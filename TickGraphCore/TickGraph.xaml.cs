@@ -55,6 +55,7 @@ namespace TickGraphCore
 		ChartTranslator chartTranslator;
 		bool mouseIsInsideGraph;
 		List<StockDataPoint> denseDataPoints;
+		List<CustomAdornment> lastCustomAdornments;
 		public TickGraph()
 		{
 			InitializeComponent();
@@ -444,7 +445,7 @@ namespace TickGraphCore
 
 		public void DrawGraph(List<CustomAdornment> customAdornments = null)
 		{
-
+			lastCustomAdornments = customAdornments;
 			Clear();
 
 			if (chartTranslator == null)
@@ -661,7 +662,12 @@ namespace TickGraphCore
 			AddVerticalTimeLine(position);
 			AddHorizontalPriceLine(position);
 
-			//DateTime mouseTime = chartTranslator.GetTimeFromX(position.X, chartWidthPixels);
+			if (mouseIsInsideGraph)
+				AddPriceHint(position);
+		}
+
+		private void AddPriceHint(Point position)
+		{
 			Ellipse closestEllipse = GetClosestEllipse(position.X, position.Y);
 			if (closestEllipse != null)
 			{
@@ -681,6 +687,7 @@ namespace TickGraphCore
 				}
 			}
 		}
+
 		public void HandleMouseDown(MouseButtonEventArgs e)
 		{
 			if (e.ChangedButton == MouseButton.Right && e.ButtonState == MouseButtonState.Pressed)
@@ -754,10 +761,9 @@ namespace TickGraphCore
 
 			Canvas.SetTop(vbUpDownArrows, e.NewSize.Height / 2 - 185);
 
-			chartWidthPixels = e.NewSize.Width - horizontalMargin;
+			chartWidthPixels = e.NewSize.Width - horizontalMargin - 60;
 			chartHeightPixels = e.NewSize.Height - verticalMargin - 100;
 
-			// Tip: Ctrl+K, Ctrl+D to format the document!
 			SetSize(cvsBackground);
 			SetSize(rctBackground);
 			SetSize(cvsMain);
@@ -809,11 +815,23 @@ namespace TickGraphCore
 		private void cvsBackground_MouseEnter(object sender, MouseEventArgs e)
 		{
 			mouseIsInsideGraph = true;
+			RefreshGraph();
 		}
 
 		private void cvsBackground_MouseLeave(object sender, MouseEventArgs e)
 		{
 			mouseIsInsideGraph = false;
+			vbHintLL.Visibility = Visibility.Hidden;
+			vbHintLR.Visibility = Visibility.Hidden;
+			vbHintUR.Visibility = Visibility.Hidden;
+			vbHintUL.Visibility = Visibility.Hidden;
+			grdStockTickDetails.Visibility = Visibility.Hidden;
+			RefreshGraph();
+		}
+
+		void RefreshGraph()
+		{
+			DrawGraph(lastCustomAdornments);
 		}
 
 		void ClearDataDensityPoints()
