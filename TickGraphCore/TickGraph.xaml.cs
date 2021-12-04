@@ -31,14 +31,20 @@ namespace TickGraphCore
 
 		public static readonly DependencyProperty ShowAnalysisProperty = DependencyProperty.Register("ShowAnalysis", typeof(bool), typeof(TickGraph), new FrameworkPropertyMetadata(false, new PropertyChangedCallback(OnShowAnalysisChanged)));
 		
-		
 		public bool ShowAnalysis
 		{
 			// IMPORTANT: To maintain parity between setting a property in XAML and procedural code, do not touch the getter and setter inside this dependency property!
 			get => (bool)GetValue(ShowAnalysisProperty);
 			set => SetValue(ShowAnalysisProperty, value);
 		}
+		public static readonly DependencyProperty UseChangeSummariesProperty = DependencyProperty.Register("UseChangeSummaries", typeof(bool), typeof(TickGraph), new FrameworkPropertyMetadata(false, new PropertyChangedCallback(OnUseChangeSummariesChanged)));
 
+		public bool UseChangeSummaries
+		{
+			// IMPORTANT: To maintain parity between setting a property in XAML and procedural code, do not touch the getter and setter inside this dependency property!
+			get => (bool)GetValue(UseChangeSummariesProperty);
+			set => SetValue(UseChangeSummariesProperty, value);
+		}
 
 		const double INT_DotDiameter = 6;
 		const double INT_DotRadius = INT_DotDiameter / 2;
@@ -71,6 +77,19 @@ namespace TickGraphCore
 			TickGraph tickGraph = o as TickGraph;
 			if (tickGraph != null)
 				tickGraph.OnShowAnalysisChanged((bool)e.OldValue, (bool)e.NewValue);
+		}
+
+		private static void OnUseChangeSummariesChanged(DependencyObject o, DependencyPropertyChangedEventArgs e)
+		{
+			TickGraph tickGraph = o as TickGraph;
+			if (tickGraph != null)
+				tickGraph.OnUseChangeSummariesChanged((bool)e.OldValue, (bool)e.NewValue);
+		}
+
+		protected virtual void OnUseChangeSummariesChanged(bool oldValue, bool newValue)
+		{
+			chartTranslator.ChangedSinceLastDataDensityQuery = true;
+			DrawGraph();
 		}
 
 		protected virtual void OnShowAnalysisChanged(bool oldValue, bool newValue)
@@ -472,7 +491,7 @@ namespace TickGraphCore
 			if (dataDensity > INT_MinDataDensity)
 			{
 				if (denseDataPoints == null || chartTranslator.ChangedSinceLastDataDensityQuery)
-					denseDataPoints = chartTranslator.GetDataPointsAcrossSegments(dataDensity);
+					denseDataPoints = chartTranslator.GetDataPointsAcrossSegments(dataDensity, UseChangeSummaries);
 
 				DrawDataPoints(denseDataPoints);
 			}
@@ -863,7 +882,7 @@ namespace TickGraphCore
 				DrawGraph();
 				return;
 			}
-			denseDataPoints = chartTranslator.GetDataPointsAcrossSegments((int)Math.Round(sldDataDensity.Value));
+			denseDataPoints = chartTranslator.GetDataPointsAcrossSegments((int)Math.Round(sldDataDensity.Value), UseChangeSummaries);
 			DrawGraph();
 		}
 	}

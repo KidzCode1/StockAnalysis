@@ -32,7 +32,7 @@ namespace BotTraderCore
 		public decimal High => high;
 		public decimal Low => low;
 
-		public bool ChangedSinceLastDataDensityQuery { get => changedSinceLastDataDensityQuery; }
+		public bool ChangedSinceLastDataDensityQuery { get => changedSinceLastDataDensityQuery; set => changedSinceLastDataDensityQuery = value; }
 
 		public int Count
 		{
@@ -568,14 +568,81 @@ namespace BotTraderCore
 
 		private static List<ChangeSummary> GetChangeSummariesInRange(StockDataPointsSnapshot stockDataPointSnapshot, DateTime startSegment, DateTime endSegment, ref int changeSummaryIndex)
 		{
+			if (stockDataPointSnapshot.ChangeSummaries == null)
+				return null;
+			List<ChangeSummary> result = new List<ChangeSummary>();
+			
+			while (changeSummaryIndex < stockDataPointSnapshot.ChangeSummaries.Count)
+			{
+				ChangeSummary changeSummary = stockDataPointSnapshot.ChangeSummaries[changeSummaryIndex];
+				if (changeSummary.Start.Time < endSegment && changeSummary.End.Time > startSegment)
+				{
+					result.Add(changeSummary);
+					changeSummaryIndex++;
+				}
+				else
+					break;
+			}
+
+			if (result.Count > 0)
+			{
+				changeSummaryIndex--;  // Go back one in case this last change summary straddles two segments.
+				return result;
+			}
+
 			return null;
 		}
 
-		void AddChangeSummariesBefore(List<ChangeSummary> changeSummariesInRange, DateTime time, ref int localChangeSummaryIndex)
+		void AddChangeSummariesBefore(List<StockDataPoint> results, List<ChangeSummary> changeSummariesInRange, DateTime endTime, ref int changeSummaryIndex)
 		{
-			
+			DateTime lastTime;
+			if (results.Count > 0)
+				lastTime = results.Last().Time;
+			else
+				lastTime = DateTime.MinValue;
+			while (changeSummaryIndex < changeSummariesInRange.Count)
+			{
+				ChangeSummary changeSummary = changeSummariesInRange[changeSummaryIndex];
+				if (changeSummary.Start.Time > endTime)
+					break;
+				AddLowAndHigh(results, changeSummary, lastTime, endTime);
+
+				changeSummaryIndex++;
+			}
+
+			changeSummaryIndex--;  // Just in case this summary straddles two segments.
 		}
 
+		private static void AddLowAndHigh(List<StockDataPoint> results, ChangeSummary changeSummary, DateTime startTime, DateTime endTime)
+		{
+			StockDataPoint low = changeSummary.Low;
+			StockDataPoint high = changeSummary.High;
+			if (low.Time <= startTime || low.Time > endTime)
+				low = null;
+
+			if (high.Time <= startTime || high.Time > endTime)
+				high = null;
+
+			if (low != null && high != null)
+				if (low.Time < high.Time)
+				{
+					results.Add(low);
+					results.Add(high);
+				}
+				else if (low.Time > high.Time)
+				{
+					results.Add(high);
+					results.Add(low);
+				}
+				else
+					results.Add(high);
+			else if (high != null)
+				results.Add(high);
+			else if (low != null)
+				results.Add(low);
+		}
+
+		// TODO: Delete this.
 		void AddChangeSummaryPointsBetween(List<StockDataPoint> results, DateTime time1, DateTime time2, ChangeSummary lastChangeSummary)
 		{
 			
@@ -619,9 +686,17 @@ namespace BotTraderCore
 				if (addChangeSummaries)
 				{
 					changeSummariesInRange = GetChangeSummariesInRange(stockDataPointSnapshot, startSegment, endSegment, ref masterChangeSummaryIndex);
-					AddChangeSummariesBefore(changeSummariesInRange, dp.Time, ref localChangeSummaryIndex);
+					if (changeSummariesInRange != null)
+					{
+						AddChangeSummariesBefore(results, changeSummariesInRange, dp.Time, ref localChangeSummaryIndex);
+						if (results.Count == 0 || results.Last().Time < dp.Time)
+							results.Add(dp);
+					}
+					else
+						results.Add(dp);
 				}
-				results.Add(dp);
+				else
+					results.Add(dp);
 				startSegment += dataTimeSpan;
 				endSegment += dataTimeSpan;
 
@@ -630,9 +705,10 @@ namespace BotTraderCore
 					StockDataPoint nextPoint = stockDataPointSnapshot.StockDataPoints[leftStartIndex];
 					while (startSegment < nextPoint.Time)  // We are just going to keep adding the same point until the startSegment equals or is greater than the nextPoint.
 					{
-						if (addChangeSummaries)
-							AddChangeSummariesBefore(changeSummariesInRange, startSegment, ref localChangeSummaryIndex);
-						results.Add(dp.Clone(startSegment));
+						if (changeSummariesInRange != null)
+							AddChangeSummariesBefore(results, changeSummariesInRange, startSegment, ref localChangeSummaryIndex);
+						if (results.Last().Time < startSegment)
+							results.Add(dp.Clone(startSegment));
 						startSegment += dataTimeSpan;
 						endSegment += dataTimeSpan;
 					}
@@ -642,14 +718,15 @@ namespace BotTraderCore
 
 			StockDataPoint lastStockPoint = stockDataPointSnapshot.StockDataPoints[stockDataPointSnapshot.StockDataPoints.Count - 1];
 
-			if (addChangeSummaries)
-				if (stockDataPointSnapshot.ChangeSummaries.Count > 0)
-				{
-					ChangeSummary lastChangeSummary = stockDataPointSnapshot.ChangeSummaries.Last();
-					AddChangeSummaryPointsBetween(results, results.Last().Time, lastStockPoint.Time, lastChangeSummary);
-				}
-			
-			results.Add(lastStockPoint);
+			if (addChangeSummaries && stockDataPointSnapshot.ChangeSummaries.Count > 0)
+			{
+				ChangeSummary lastChangeSummary = stockDataPointSnapshot.ChangeSummaries.Last();
+				AddLowAndHigh(results, lastChangeSummary, results.Last().Time, lastStockPoint.Time);
+				if (lastStockPoint.Time > results.Last().Time)
+					results.Add(lastStockPoint);
+			}
+			else
+				results.Add(lastStockPoint);
 
 			return results;
 		}
