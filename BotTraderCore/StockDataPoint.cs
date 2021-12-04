@@ -73,5 +73,10 @@ namespace BotTraderCore
 			List<StockDataPoint> data = JsonConvert.DeserializeObject<List<StockDataPoint>>(readFromFileStr);
 			return data;
 		}
+
+		public StockDataPoint Clone(DateTime timeOverride)
+		{
+			return new StockDataPoint(Tick) { Time = timeOverride };
+		}
 	}
 }

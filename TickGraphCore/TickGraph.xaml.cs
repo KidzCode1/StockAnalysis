@@ -1,19 +1,13 @@
-﻿using BotTraderCore;
-using System;
-using System.Collections.Generic;
-using System.Globalization;
+﻿using System;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
+using System.Globalization;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
+using System.Windows.Controls;
+using System.Collections.Generic;
+using BotTraderCore;
 
 namespace TickGraphCore
 {
@@ -22,9 +16,10 @@ namespace TickGraphCore
 	/// </summary>
 	public partial class TickGraph : UserControl
 	{
+		
 		Color verticalTimeLineColor = Color.FromArgb(200, 115, 115, 115);
 		Color horizontalPriceLineColor = Color.FromArgb(200, 115, 115, 115);
-
+		public int MaxDataDensity { get; set; } = INT_MaxDataDensity;
 		public Selection Selection { get; set; } = new Selection();
 
 		Point lastMousePosition;
@@ -48,6 +43,7 @@ namespace TickGraphCore
 		const double INT_DotDiameter = 6;
 		const double INT_DotRadius = INT_DotDiameter / 2;
 		const int INT_MinDataDensity = 8;
+		const int INT_MaxDataDensity = 150;
 
 		double chartHeightPixels;
 		double chartWidthPixels;
@@ -56,8 +52,16 @@ namespace TickGraphCore
 		bool mouseIsInsideGraph;
 		List<StockDataPoint> denseDataPoints;
 		List<CustomAdornment> lastCustomAdornments;
+		static SolidColorBrush noChangeBrushSolid = new SolidColorBrush(Color.FromArgb(255, 164, 74, 255));
+		static SolidColorBrush noChangeBrushHalfOpacity = new SolidColorBrush(Color.FromArgb(128, 164, 74, 255));
+		static SolidColorBrush riseBrushSolid = new SolidColorBrush(Color.FromArgb(255, 0, 75, 125));
+		static SolidColorBrush riseBrushHalfOpacity = new SolidColorBrush(Color.FromArgb(128, 0, 75, 125));
+		static SolidColorBrush fallBrushSolid = new SolidColorBrush(Color.FromRgb(196, 47, 47));
+		static SolidColorBrush fallBrushHalfOpacity = new SolidColorBrush(Color.FromArgb(128, 196, 47, 47));
+
 		public TickGraph()
 		{
+			MaxDataDensity = INT_MaxDataDensity;
 			InitializeComponent();
 			HookEvents();
 		}
@@ -207,26 +211,35 @@ namespace TickGraphCore
 
 		private void AddDot(double lastY, double x, double y, StockDataPoint stockDataPoint)
 		{
-			Ellipse dot = new Ellipse() { Fill = new SolidColorBrush(GetFillColor(lastY, y, 128)), Width = INT_DotDiameter, Height = INT_DotDiameter };
+			Ellipse dot = new Ellipse() { Fill = GetFillBrush(lastY, y, 128), Width = INT_DotDiameter, Height = INT_DotDiameter };
 			Canvas.SetLeft(dot, x - INT_DotRadius);
 			Canvas.SetTop(dot, y - INT_DotRadius);
 			AddElement(dot);
 			dot.Tag = stockDataPoint;
 		}
 
-		private static Color GetFillColor(double lastY, double y, byte opacity)
+		private static SolidColorBrush GetFillBrush(double lastY, double y, byte opacity)
 		{
 			if (lastY == double.MinValue || lastY == y /* IsClose(lastY, y) */)
-				return Color.FromArgb(opacity, 164, 74, 255);
+				if (opacity == 255)
+					return noChangeBrushSolid;
+				else
+					return noChangeBrushHalfOpacity;
 			if (lastY > y)
-				return Color.FromArgb(opacity, 0, 75, 125);
-			return Color.FromArgb(opacity, 255, 46, 46);
+				if (opacity == 255)
+					return riseBrushSolid;
+				else
+					return riseBrushHalfOpacity;
+
+			if (opacity == 255)
+				return fallBrushSolid;
+			return fallBrushHalfOpacity;
 		}
 
 		private void AddLine(double lastX, double lastY, double x, double y)
 		{
 			Line line = CreateLine(lastX, lastY, x, y);
-			line.Stroke = new SolidColorBrush(GetFillColor(lastY, y, 255));
+			line.Stroke = GetFillBrush(lastY, y, 255);
 			InsertElement(line);  // All lines go to the back.
 		}
 
@@ -453,10 +466,13 @@ namespace TickGraphCore
 
 			int dataDensity = (int)Math.Round(sldDataDensity.Value);
 
+			if (dataDensity == 0 && chartTranslator.Count > MaxDataDensity)
+				dataDensity = MaxDataDensity;
+
 			if (dataDensity > INT_MinDataDensity)
 			{
 				if (denseDataPoints == null || chartTranslator.ChangedSinceLastDataDensityQuery)
-					denseDataPoints = chartTranslator.GetStockDataPointsAcrossSegments(dataDensity);
+					denseDataPoints = chartTranslator.GetDataPointsAcrossSegments(dataDensity);
 
 				DrawDataPoints(denseDataPoints);
 			}
@@ -847,7 +863,7 @@ namespace TickGraphCore
 				DrawGraph();
 				return;
 			}
-			denseDataPoints = chartTranslator.GetStockDataPointsAcrossSegments((int)Math.Round(sldDataDensity.Value));
+			denseDataPoints = chartTranslator.GetDataPointsAcrossSegments((int)Math.Round(sldDataDensity.Value));
 			DrawGraph();
 		}
 	}

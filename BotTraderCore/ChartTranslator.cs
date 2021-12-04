@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 
 namespace BotTraderCore
@@ -8,7 +9,10 @@ namespace BotTraderCore
 	public class ChartTranslator
 	{
 		internal object stockDataPointsLock = new object();
-		List<StockDataPoint> stockDataPoints = new List<StockDataPoint>();
+		List<StockDataPoint> stockDataPoints = new List<StockDataPoint>();  // access protected by stockDataPointsLock
+		List<ChangeSummary> changeSummaries = new List<ChangeSummary>();  // access protected by stockDataPointsLock
+
+		public int MaxDataPointsToKeep { get; set; } = 500;
 
 		public ChartTranslator()
 		{
@@ -19,6 +23,8 @@ namespace BotTraderCore
 		DateTime start;
 		DateTime end;
 		bool changedSinceLastDataDensityQuery;
+		bool onFlatLine;
+		ChangeSummary activeChangeSummary;  // access protected by stockDataPointsLock
 
 		public List<StockDataPoint> StockDataPoints { get => stockDataPoints; }
 		public DateTime Start => start;
@@ -27,6 +33,17 @@ namespace BotTraderCore
 		public decimal Low => low;
 
 		public bool ChangedSinceLastDataDensityQuery { get => changedSinceLastDataDensityQuery; }
+
+		public int Count
+		{
+			get
+			{
+				int count;
+				lock (stockDataPointsLock)
+					count = stockDataPoints.Count;
+				return count;
+			}
+		}
 
 		/// <summary>
 		/// Adjusts the high, low, and end, based on the new data point.
@@ -108,6 +125,12 @@ namespace BotTraderCore
 
 			if (lastPointToRemove.Tick.LastTradePrice == newStockDataPoint.Tick.LastTradePrice)
 			{
+				if (activeChangeSummary != null)
+				{
+					changeSummaries.Add(activeChangeSummary);
+					activeChangeSummary = null;
+				}
+
 				if (stockDataPoints[lastIndex - 1].Tick.LastTradePrice == newStockDataPoint.Tick.LastTradePrice)  // Last two points, plus this one are the same. We can remove the middle point.
 				{
 					// Track number of points removed... 
@@ -121,7 +144,18 @@ namespace BotTraderCore
 
 					// Remove the duplicate point...
 					stockDataPoints.RemoveAt(lastIndex);
+					onFlatLine = true;
 				}
+			}
+			else if (onFlatLine)
+			{
+				onFlatLine = false;
+				activeChangeSummary = new ChangeSummary();
+				activeChangeSummary.Start = newStockDataPoint;
+				activeChangeSummary.End = newStockDataPoint;
+				activeChangeSummary.High = newStockDataPoint;
+				activeChangeSummary.Low = newStockDataPoint;
+				activeChangeSummary.PointCount = 1;
 			}
 		}
 
@@ -192,28 +226,61 @@ namespace BotTraderCore
 			return distanceFromTopPixels;
 		}
 
-		public StockDataPoint AddStockPosition(CustomTick data)
+
+		/// <summary>
+		/// Removes any range summaries older than Start
+		/// </summary>
+		void RemoveOldRangeSummaries()
+		{
+			int numSummariesToRemove = 0;
+			foreach (ChangeSummary rangeSummary in changeSummaries)
+				if (rangeSummary.End.Time < start)
+					numSummariesToRemove++;
+				else	// range summaries are added in chronological order, so once we find the end of a range summary that is in bounds, we can skip the rest as they are automatically in bounds.
+					break;
+
+			for (int i = 0; i < numSummariesToRemove; i++)
+				changeSummaries.RemoveAt(0);
+		}
+
+		public StockDataPoint AddStockPosition(CustomTick data, DateTime? timeOverride = null)
 		{
 			StockDataPoint stockDataPoint = new StockDataPoint(data);
+			
+			if (timeOverride != null)
+				stockDataPoint.Time = timeOverride.Value;
+
 			lock (stockDataPointsLock)
 			{
 				RemoveMatchingDataPoints(stockDataPoint);
 				StockDataPoints.Add(stockDataPoint);
+				if (activeChangeSummary != null && stockDataPoint != activeChangeSummary.End)
+				{
+					activeChangeSummary.End = stockDataPoint;
+					activeChangeSummary.PointCount++;
+
+					if (stockDataPoint.Tick.LastTradePrice > activeChangeSummary.High.Tick.LastTradePrice)
+						activeChangeSummary.High = stockDataPoint;
+					
+					if (stockDataPoint.Tick.LastTradePrice < activeChangeSummary.Low.Tick.LastTradePrice)
+						activeChangeSummary.Low = stockDataPoint;
+				}
 			}
 
-			if (StockDataPoints.Count > 1000)  // Only keep 1000 data points in history.
+			if (StockDataPoints.Count > MaxDataPointsToKeep)  // Only keep this many data points in history.
 			{
 				CustomTick removed = StockDataPoints[0].Tick;
 				lock (stockDataPointsLock)
 					StockDataPoints.RemoveAt(0); // Remove oldest data point
 
+				start = StockDataPoints[0].Time;
+				RemoveOldRangeSummaries();
+
+				// TODO: Invalidate instead of recalculate. Later, calculate on demand when the property is accessed.
 				if (IsHighOrLow(removed))  // This data point may have been defining our high or low
 					CalculateBounds();  // We need to recalculate everything.
 				else  // Only the start and end have changed...
-				{
-					start = StockDataPoints[0].Time;
 					AdjustBounds(stockDataPoint);
-				}
 			}
 			else if (StockDataPoints.Count < 10)
 				CalculateBounds();
@@ -223,78 +290,45 @@ namespace BotTraderCore
 			return stockDataPoint;
 		}
 
-		public StockDataPoint TestAddStockDataPoint(decimal price, double offsetSeconds)
-		{
-			StockDataPoint stockDataPoint = new StockDataPoint(new CustomTick() { LastTradePrice = price, HighestBidPrice = price, LowestAskPrice = price, Symbol = "BTC" }) { Time = DateTime.MinValue + TimeSpan.FromSeconds(offsetSeconds) };
-			lock (stockDataPointsLock)
-				StockDataPoints.Add(stockDataPoint);
 
-			return stockDataPoint;
+		/// <summary>
+		/// Adds a sequence of prices as stock data points, each offset by one second.
+		/// </summary>
+		/// <param name="args"></param>
+		public void TestAddPriceSequence(params decimal[] args)
+		{
+			for (int i = 0; i < args.Length; i++)
+				TestAddStockDataPoint(args[i], i);
+		}
+
+		/// <summary>
+		/// Adds a range of data points specified by (price, time offset in seconds) pairs.
+		/// </summary>
+		/// <param name="args">Pairs of numeric data - price followed by the time offset in seconds.</param>
+		/// <exception cref="ArgumentException"></exception>
+		public void TestAddDataPoints(params decimal[] args)
+		{
+			if (args.Length % 2 != 0)
+				throw new ArgumentException($"Must pass an even number of args to {nameof(TestAddDataPoints)}.");
+
+			for (int i = 0; i < args.Length; i += 2)
+				TestAddStockDataPoint(args[i], (double)args[i + 1]);
+		}
+
+		/// <summary>
+		/// Adds a test stock data point.
+		/// </summary>
+		/// <param name="price"></param>
+		/// <param name="offsetSeconds"></param>
+		public void TestAddStockDataPoint(decimal price, double offsetSeconds)
+		{
+			AddStockPosition(new CustomTick() { LastTradePrice = price, HighestBidPrice = price, LowestAskPrice = price, Symbol = "BTC" }, DateTime.MinValue + TimeSpan.FromSeconds(offsetSeconds));
 		}
 
 		private bool IsHighOrLow(CustomTick first)
 		{
 			return first.LastTradePrice == High || first.LastTradePrice == Low;
 		}
-
-
-		//public void AddMovingAverage(double spanDurationSeconds, Canvas canvas, Brush lineColor)
-		//{
-		//	TimeSpan timeSpan = TimeSpan.FromSeconds(spanDurationSeconds);
-		//	TimeSpan halfTimeSpan = TimeSpan.FromSeconds(spanDurationSeconds / 2.0);
-		//	DateTime spanStartTime = start;
-		//	DateTime spanEndTime = spanStartTime + timeSpan;
-
-		//	List<StockDataPoint> pointsInSpan = new List<StockDataPoint>();
-		//	double lastAverageX = 0;
-		//	double lastAverageY = double.MinValue;
-
-		//	lock (stockDataPointsLock)
-		//		foreach (StockDataPoint stockDataPoint in StockDataPoints)
-		//		{
-		//			if (stockDataPoint.Time > spanEndTime)
-		//			{
-		//				DateTime middleTime = spanStartTime + halfTimeSpan;
-		//				double averageX = GetStockPositionX(middleTime);
-
-		//				if (pointsInSpan.Count > 0)
-		//				{
-		//					// We are outside of the span we are interested in.
-		//					// That means we need to calculate the moving average for the points we have collected.
-		//					decimal averagePrice = GetAveragePrice(pointsInSpan);
-		//					double averageY = GetStockPositionY(averagePrice);
-
-		//					DrawLine(canvas, lineColor, lastAverageX, lastAverageY, averageX, averageY);
-
-		//					lastAverageY = averageY;
-
-		//					StockDataPoint lastPoint = pointsInSpan[pointsInSpan.Count - 1];
-		//					pointsInSpan.Clear();
-		//					if (stockDataPoint.Time > spanEndTime)
-		//						pointsInSpan.Add(lastPoint);
-		//				}
-		//				else
-		//				{
-		//					DrawLine(canvas, lineColor, lastAverageX, lastAverageY, averageX, lastAverageY);
-		//				}
-
-		//				lastAverageX = averageX;
-
-		//				if (pointsInSpan.Count > 0)
-		//				{
-		//					while (spanStartTime < pointsInSpan[0].Time - timeSpan)
-		//					{
-		//						spanStartTime += timeSpan;
-		//					}
-		//				}
-		//				else
-		//					spanStartTime = spanEndTime;
-
-		//				spanEndTime = spanStartTime + timeSpan;
-		//			}
-		//			pointsInSpan.Add(stockDataPoint);
-		//		}
-		//}
 
 		private static decimal GetAveragePrice(List<StockDataPoint> pointsInSpan)
 		{
@@ -312,21 +346,6 @@ namespace BotTraderCore
 			decimal averagePrice = totalPrice / totalWeight;
 			return averagePrice;
 		}
-
-		//private static void DrawLine(Canvas canvas, Brush lineColor, double lastAverageX, double lastAverageY, double averageX, double averageY)
-		//{
-		//	if (lastAverageY != double.MinValue)
-		//	{
-		//		Line line = new Line();
-		//		line.X1 = lastAverageX;
-		//		line.Y1 = lastAverageY;
-		//		line.X2 = averageX;
-		//		line.Y2 = averageY;
-		//		line.Stroke = lineColor;
-		//		line.StrokeThickness = 4;
-		//		canvas.Children.Add(line);
-		//	}
-		//}
 
 		public StockDataPoint GetNearestPointInTime(DateTime time)
 		{
@@ -439,7 +458,7 @@ namespace BotTraderCore
 			StockDataPointsSnapshot result;
 
 			lock (stockDataPointsLock)
-				result = new StockDataPointsSnapshot(StockDataPoints, start, end, low, high);
+				result = new StockDataPointsSnapshot(StockDataPoints, start, end, low, high, changeSummaries, activeChangeSummary);
 
 			return result;
 		}
@@ -493,7 +512,6 @@ namespace BotTraderCore
 			if (startIndex == -1)
 				return null;
 
-			// TODO: We need to multiply these values by the actual length of this data point (until the next data point is found)
 			// The length of the first value is the time of the second tick minus the startSegment.
 			// The length of the last value is the endSegment minus the time of the last tick.
 			// All other tick lengths are the time of that tick minus the time of the last tick.
@@ -536,6 +554,7 @@ namespace BotTraderCore
 				totalDurationSeconds += durationSeconds;
 
 				CustomTick tick = stockDataPoint.Tick;
+				// For calculating average value...
 				totalLastTradePrice += durationSeconds * tick.LastTradePrice;
 				totalHighestBidPrice += durationSeconds * tick.HighestBidPrice;
 				totalLowestAskPrice += durationSeconds * tick.LowestAskPrice;
@@ -547,6 +566,23 @@ namespace BotTraderCore
 			return new StockDataPoint(new CustomTick() { LastTradePrice = lastTradePrice, HighestBidPrice = highestBidPrice, LowestAskPrice = lowestAskPrice }) { Time = startSegment };
 		}
 
+		private static List<ChangeSummary> GetChangeSummariesInRange(StockDataPointsSnapshot stockDataPointSnapshot, DateTime startSegment, DateTime endSegment, ref int changeSummaryIndex)
+		{
+			return null;
+		}
+
+		void AddChangeSummariesBefore(List<ChangeSummary> changeSummariesInRange, DateTime time, ref int localChangeSummaryIndex)
+		{
+			
+		}
+
+		void AddChangeSummaryPointsBetween(List<StockDataPoint> results, DateTime time1, DateTime time2, ChangeSummary lastChangeSummary)
+		{
+			
+		}
+
+		///// <param name="redistributePoints">If true, points will be redistributed away from flats (no change) toward 
+		///// areas with more change (peaks and valleys).</param>
 
 		/// <summary>
 		/// Gets a list of StockDataPoints based on the specified segmentCount. So if I have 11 data points and I 
@@ -558,7 +594,7 @@ namespace BotTraderCore
 		/// will be repeated if more segments span a range than actual data points (in the ChartTranslator).
 		/// Similarly, data points will be averaged if more than one appear in a single segment.</param>
 		/// <returns>Returns the calculated StockDataPoints. The count will always be segmentCount plus one.</returns>
-		public List<StockDataPoint> GetStockDataPointsAcrossSegments(int segmentCount)
+		public List<StockDataPoint> GetDataPointsAcrossSegments(int segmentCount, bool addChangeSummaries = false)
 		{
 			if (segmentCount == 0)
 				return null;
@@ -570,12 +606,21 @@ namespace BotTraderCore
 			DateTime startSegment = stockDataPointSnapshot.Start;
 			DateTime endSegment = stockDataPointSnapshot.Start + dataTimeSpan;
 			int leftStartIndex = 0;
+			int masterChangeSummaryIndex = 0;
 			do
 			{
 				StockDataPoint dp = GetPointInRange(stockDataPointSnapshot, startSegment, endSegment, ref leftStartIndex);
+				
 				if (dp == null)
 					break;
 
+				int localChangeSummaryIndex = 0;
+				List<ChangeSummary> changeSummariesInRange = null;
+				if (addChangeSummaries)
+				{
+					changeSummariesInRange = GetChangeSummariesInRange(stockDataPointSnapshot, startSegment, endSegment, ref masterChangeSummaryIndex);
+					AddChangeSummariesBefore(changeSummariesInRange, dp.Time, ref localChangeSummaryIndex);
+				}
 				results.Add(dp);
 				startSegment += dataTimeSpan;
 				endSegment += dataTimeSpan;
@@ -585,14 +630,26 @@ namespace BotTraderCore
 					StockDataPoint nextPoint = stockDataPointSnapshot.StockDataPoints[leftStartIndex];
 					while (startSegment < nextPoint.Time)  // We are just going to keep adding the same point until the startSegment equals or is greater than the nextPoint.
 					{
-						results.Add(dp);
+						if (addChangeSummaries)
+							AddChangeSummariesBefore(changeSummariesInRange, startSegment, ref localChangeSummaryIndex);
+						results.Add(dp.Clone(startSegment));
 						startSegment += dataTimeSpan;
 						endSegment += dataTimeSpan;
 					}
 				}
 			} while (results.Count < segmentCount);
 
-			results.Add(stockDataPointSnapshot.StockDataPoints[stockDataPointSnapshot.StockDataPoints.Count - 1]);
+
+			StockDataPoint lastStockPoint = stockDataPointSnapshot.StockDataPoints[stockDataPointSnapshot.StockDataPoints.Count - 1];
+
+			if (addChangeSummaries)
+				if (stockDataPointSnapshot.ChangeSummaries.Count > 0)
+				{
+					ChangeSummary lastChangeSummary = stockDataPointSnapshot.ChangeSummaries.Last();
+					AddChangeSummaryPointsBetween(results, results.Last().Time, lastStockPoint.Time, lastChangeSummary);
+				}
+			
+			results.Add(lastStockPoint);
 
 			return results;
 		}
