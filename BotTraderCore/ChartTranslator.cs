@@ -648,6 +648,13 @@ namespace BotTraderCore
 			
 		}
 
+
+		bool AreClose(decimal price1, decimal price2)
+		{
+			decimal averagePrice = (price1 + price2) / 2;
+			return Math.Abs(price1 - price2) < averagePrice * 0.0001m;
+		}
+
 		///// <param name="redistributePoints">If true, points will be redistributed away from flats (no change) toward 
 		///// areas with more change (peaks and valleys).</param>
 
@@ -672,8 +679,11 @@ namespace BotTraderCore
 			TimeSpan dataTimeSpan = TimeSpan.FromTicks((stockDataPointSnapshot.End - stockDataPointSnapshot.Start).Ticks / segmentCount);
 			DateTime startSegment = stockDataPointSnapshot.Start;
 			DateTime endSegment = stockDataPointSnapshot.Start + dataTimeSpan;
+
+			double secondsPerSegment = dataTimeSpan.TotalSeconds;
+			double segmentQuarterSpanSeconds = secondsPerSegment / 4.0;
+
 			int leftStartIndex = 0;
-			int masterChangeSummaryIndex = 0;
 			do
 			{
 				StockDataPoint dp = GetPointInRange(stockDataPointSnapshot, startSegment, endSegment, ref leftStartIndex);
@@ -681,22 +691,7 @@ namespace BotTraderCore
 				if (dp == null)
 					break;
 
-				int localChangeSummaryIndex = 0;
-				List<ChangeSummary> changeSummariesInRange = null;
-				if (addChangeSummaries)
-				{
-					changeSummariesInRange = GetChangeSummariesInRange(stockDataPointSnapshot, startSegment, endSegment, ref masterChangeSummaryIndex);
-					if (changeSummariesInRange != null)
-					{
-						AddChangeSummariesBefore(results, changeSummariesInRange, dp.Time, ref localChangeSummaryIndex);
-						if (results.Count == 0 || results.Last().Time < dp.Time)
-							results.Add(dp);
-					}
-					else
-						results.Add(dp);
-				}
-				else
-					results.Add(dp);
+				results.Add(dp);
 				startSegment += dataTimeSpan;
 				endSegment += dataTimeSpan;
 
@@ -705,10 +700,7 @@ namespace BotTraderCore
 					StockDataPoint nextPoint = stockDataPointSnapshot.StockDataPoints[leftStartIndex];
 					while (startSegment < nextPoint.Time)  // We are just going to keep adding the same point until the startSegment equals or is greater than the nextPoint.
 					{
-						if (changeSummariesInRange != null)
-							AddChangeSummariesBefore(results, changeSummariesInRange, startSegment, ref localChangeSummaryIndex);
-						if (results.Last().Time < startSegment)
-							results.Add(dp.Clone(startSegment));
+						results.Add(dp.Clone(startSegment));
 						startSegment += dataTimeSpan;
 						endSegment += dataTimeSpan;
 					}
@@ -718,15 +710,84 @@ namespace BotTraderCore
 
 			StockDataPoint lastStockPoint = stockDataPointSnapshot.StockDataPoints[stockDataPointSnapshot.StockDataPoints.Count - 1];
 
+			results.Add(lastStockPoint);
+
 			if (addChangeSummaries && stockDataPointSnapshot.ChangeSummaries.Count > 0)
 			{
-				ChangeSummary lastChangeSummary = stockDataPointSnapshot.ChangeSummaries.Last();
-				AddLowAndHigh(results, lastChangeSummary, results.Last().Time, lastStockPoint.Time);
-				if (lastStockPoint.Time > results.Last().Time)
-					results.Add(lastStockPoint);
+				lastStockPoint = null;
+				
+				foreach (ChangeSummary changeSummary in stockDataPointSnapshot.ChangeSummaries)
+				{
+					results.Add(changeSummary.Start);
+					results.Add(changeSummary.Low);
+					results.Add(changeSummary.High);
+					results.Add(changeSummary.End);
+				}
+
+				results.Sort((x, y) => Math.Sign((x.Time - y.Time).TotalSeconds));
+
+				decimal average = results.Select(m => m.Tick.LastTradePrice).Average();
+
+				DateTime lastTime = DateTime.MinValue;
+				List<StockDataPoint> stockDataPointsToRemove = new List<StockDataPoint>();
+				StockDataPoint priorToLastDataPoint = null;
+				foreach (StockDataPoint stockPoint in results)
+				{
+					if (lastStockPoint == null)
+					{
+						lastTime = stockPoint.Time;
+						priorToLastDataPoint = lastStockPoint;
+						lastStockPoint = stockPoint;
+						continue;
+					}
+					
+					//lastTime == stockPoint.Time
+					double distanceInSeconds;
+					if (lastTime < stockPoint.Time)
+						distanceInSeconds = (stockPoint.Time - lastTime).TotalSeconds;
+					else if (lastTime == stockPoint.Time)
+						distanceInSeconds = 0;
+					else
+					{
+						// Should never get here. List is sorted by time.
+						distanceInSeconds = 0;
+						Debugger.Break();
+					}
+
+					if (distanceInSeconds < segmentQuarterSpanSeconds)
+					{
+						// TODO: Remove points that are close in time (less than half the dataTimeSpan), keeping the most extreme (away from average) points.
+						decimal lastDistanceFromAverage = Math.Abs(average - lastStockPoint.Tick.LastTradePrice);
+						decimal thisDistanceFromAverage = Math.Abs(average - stockPoint.Tick.LastTradePrice);
+						if (lastDistanceFromAverage > thisDistanceFromAverage)
+						{
+							stockDataPointsToRemove.Add(stockPoint);
+							//lastTime = stockPoint.Time;
+							//continue;  // We can still use the last stock point for comparison since we are removing this one.
+						}
+						else
+						{
+							stockDataPointsToRemove.Add(lastStockPoint);
+						}
+					}
+					else if (priorToLastDataPoint != null) // Check for multiple data points in a row at the same price that we can remove...
+					{
+						if (AreClose(priorToLastDataPoint.Tick.LastTradePrice, lastStockPoint.Tick.LastTradePrice) && AreClose(lastStockPoint.Tick.LastTradePrice, stockPoint.Tick.LastTradePrice))
+						{
+							// Three matching stock prices in a row. Remove the middle point.
+							stockDataPointsToRemove.Add(lastStockPoint);
+						}
+					}
+					lastTime = stockPoint.Time;
+					priorToLastDataPoint = lastStockPoint;
+					lastStockPoint = stockPoint;
+				}
+
+				foreach (StockDataPoint stockDataPointToRemove in stockDataPointsToRemove)
+				{
+					results.Remove(stockDataPointToRemove);
+				}
 			}
-			else
-				results.Add(lastStockPoint);
 
 			return results;
 		}
@@ -746,7 +807,10 @@ namespace BotTraderCore
 		public void Clear()
 		{
 			lock (stockDataPointsLock)
+			{
 				StockDataPoints.Clear();
+				changeSummaries.Clear();
+			}
 		}
 
 		public void SetTickRange(TickRange tickRange)
