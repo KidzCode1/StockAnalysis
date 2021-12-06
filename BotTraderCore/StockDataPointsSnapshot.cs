@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace BotTraderCore
 {
 	public class StockDataPointsSnapshot
 	{
-		List<StockDataPoint> stockDataPoints = new List<StockDataPoint>();
-		List<ChangeSummary> changeSummaries = new List<ChangeSummary>();
+		IReadOnlyCollection<StockDataPoint> dataPoints;
+		IReadOnlyCollection<ChangeSummary> changeSummaries;
 
 		public StockDataPointsSnapshot(List<StockDataPoint> dataPoints, DateTime start, DateTime end, decimal low, decimal high, List<ChangeSummary> changeSummaries, ChangeSummary activeChangeSummary)
 		{
@@ -15,21 +16,20 @@ namespace BotTraderCore
 			Low = low;
 			End = end;
 			Start = start;
-			stockDataPoints.AddRange(dataPoints);
-			this.changeSummaries.AddRange(changeSummaries);
-
+			this.dataPoints = new ReadOnlyCollection<StockDataPoint>(dataPoints.ToList());
+			List<ChangeSummary> localChangeSummaries = changeSummaries.ToList();
 			if (activeChangeSummary != null)
-				this.changeSummaries.Add(activeChangeSummary);
+				localChangeSummaries.Add(activeChangeSummary);
+			this.changeSummaries = new ReadOnlyCollection<ChangeSummary>(localChangeSummaries);
 		}
 
-		public List<StockDataPoint> StockDataPoints { get => stockDataPoints; set => stockDataPoints = value; }
-		public List<ChangeSummary> ChangeSummaries { get => changeSummaries; set => changeSummaries = value; }
+		public IReadOnlyCollection<StockDataPoint> DataPoints { get => dataPoints; }
+		public IReadOnlyCollection<ChangeSummary> ChangeSummaries { get => changeSummaries; }
 
 		
 		public DateTime Start { get; set; }
 		public DateTime End { get; set; }
 		public decimal Low { get; set; }
 		public decimal High { get; set; }
-
 	}
 }

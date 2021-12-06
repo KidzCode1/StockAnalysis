@@ -38,26 +38,26 @@
 		<Canvas x:Name="cvsBackground" Height="700" Width="600" Grid.Column="1" >
 			<!--This is so the preview mouse events get sent.-->
 			<Rectangle x:Name="rctBackground" Height="700" Width="600" Stroke="#FFBFBFFF" Fill="#01ffffff" ></Rectangle>
-			<Viewbox x:Name="vbUpDownArrows" Width="45" Canvas.Left="-50">
-				<Canvas Width="289" Height="1474">
-					<Polygon Points="272.5,144.5 208.5,144.5 208.5,470.5 80.5,470.5 80.5,144.5 16.5,144.5 144.5,16.5" FillRule="EvenOdd" Fill="#FFDAE3F3" Stroke="{x:Null}" />
-					<Canvas>
-						<Canvas.Clip>
-							<RectangleGeometry Rect="12,14,266,1447" />
-						</Canvas.Clip>
-						<Polygon Points="272.5,144.5 208.5,144.5 208.5,470.5 80.5,470.5 80.5,144.5 16.5,144.5 144.5,16.5" FillRule="EvenOdd" Fill="{x:Null}" Stroke="#FF2F528F" StrokeThickness="4.1875" />
-					</Canvas>
-					<Polygon Points="16.5,1329.5 80.5,1329.5 80.5,1003.5 208.5,1003.5 208.5,1329.5 272.5,1329.5 144.5,1457.5" FillRule="EvenOdd" Fill="#FFDAE3F3" Stroke="{x:Null}" />
-					<Canvas>
-						<Canvas.Clip>
-							<RectangleGeometry Rect="12,14,266,1447" />
-						</Canvas.Clip>
-						<Polygon Points="16.5,1329.5 80.5,1329.5 80.5,1003.5 208.5,1003.5 208.5,1329.5 272.5,1329.5 144.5,1457.5" FillRule="EvenOdd" Fill="{x:Null}" Stroke="#FF2F528F" StrokeThickness="4.1875" />
-					</Canvas>
-				</Canvas>
-			</Viewbox>
+            <Viewbox x:Name="vbUpDownArrows" Width="35" Canvas.Left="-45">
+                <Canvas Width="260" Height="810">
+                    <Polygon Points="32.5,680 81.25,680 81.25,565.5 178.75,565.5 178.75,680 227.5,680 130,777.5" FillRule="EvenOdd" Fill="#7FDAE3F3" Stroke="{x:Null}" />
+                    <Canvas Opacity="0.5">
+                        <Canvas.Clip>
+                            <RectangleGeometry Rect="23,27,215,757" />
+                        </Canvas.Clip>
+                        <Polygon Points="32.5,680 81.25,680 81.25,565.5 178.75,565.5 178.75,680 227.5,680 130,777.5" FillRule="EvenOdd" Fill="{x:Null}" Stroke="#FFB4C7E7" StrokeThickness="8.3125" />
+                    </Canvas>
+                    <Polygon Points="227.5,130 178.75,130 178.75,243.5 81.25,243.5 81.25,130 32.5,130 130,32.5" FillRule="EvenOdd" Fill="#7FDAE3F3" Stroke="{x:Null}" />
+                    <Canvas>
+                        <Canvas.Clip>
+                            <RectangleGeometry Rect="23,27,215,757" />
+                        </Canvas.Clip>
+                        <Polygon Points="227.5,130 178.75,130 178.75,243.5 81.25,243.5 81.25,130 32.5,130 130,32.5" FillRule="EvenOdd" Fill="{x:Null}" Stroke="#FFB4C7E7" StrokeThickness="8.3125" />
+                    </Canvas>
+                </Canvas>
+            </Viewbox>
 
-		</Canvas>
+        </Canvas>
         <Canvas x:Name="cvsMain" Height="700" Width="600" Grid.Column="1" >
 
 		</Canvas>
@@ -205,7 +205,7 @@
 			</Canvas>
 		</Canvas>
 
-		<Slider x:Name="sldDataDensity" ValueChanged="sldDataDensity_ValueChanged" Value="0" Minimum="0" Maximum="800" Margin="0, -30, 0, 0" Grid.Column="1">
+		<Slider x:Name="sldDataDensity" ValueChanged="sldDataDensity_ValueChanged" Value="0" Minimum="0" Maximum="300" Margin="0, -30, 0, 0" Grid.Column="1">
 			
 		</Slider>
 	</Grid>

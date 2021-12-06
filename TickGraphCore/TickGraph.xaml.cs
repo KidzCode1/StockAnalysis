@@ -488,7 +488,7 @@ namespace TickGraphCore
 			if (dataDensity == 0 && chartTranslator.Count > MaxDataDensity)
 				dataDensity = MaxDataDensity;
 
-			if (dataDensity > INT_MinDataDensity)
+			if (dataDensity > INT_MinDataDensity - 3)
 			{
 				if (denseDataPoints == null || chartTranslator.ChangedSinceLastDataDensityQuery)
 					denseDataPoints = chartTranslator.GetDataPointsAcrossSegments(dataDensity, UseChangeSummaries);
@@ -498,7 +498,7 @@ namespace TickGraphCore
 			else
 			{
 				StockDataPointsSnapshot stockDataPointSnapshot = chartTranslator.GetStockDataPointsSnapshot();
-				DrawDataPoints(stockDataPointSnapshot.StockDataPoints);
+				DrawDataPoints(stockDataPointSnapshot.DataPoints);
 			}
 
 
@@ -514,7 +514,7 @@ namespace TickGraphCore
 			DrawCustomAdornments(customAdornments);
 		}
 
-		private void DrawDataPoints(List<StockDataPoint> stockDataPoints)
+		private void DrawDataPoints(IEnumerable<StockDataPoint> stockDataPoints)
 		{
 			if (stockDataPoints == null)
 				return;
@@ -661,7 +661,7 @@ namespace TickGraphCore
 		void AddPriceMarkers()
 		{
 			const double fontSize = 14;
-			const int leftMargin = -130;
+			const int leftMargin = -80;
 			const int leftItemWidth = -leftMargin - 10;
 			TextBlock txLow = new TextBlock() { Text = $"{chartTranslator.Low:C}", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
 			TextBlock txHigh = new TextBlock() { Text = $"{chartTranslator.High:C}", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
@@ -672,11 +672,11 @@ namespace TickGraphCore
 
 			decimal amountInView = chartTranslator.High - chartTranslator.Low;
 			decimal percentInView = amountInView / chartTranslator.High * 100;
-			TextBlock txPercentInView = new TextBlock() { Text = $"{Math.Round(percentInView, 2)}%", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize * 2 };
-			double amountFontSize = fontSize;
+			TextBlock txPercentInView = new TextBlock() { Text = $"{Math.Round(percentInView, 2)}%", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize * 1.2 };
+			double amountFontSize = fontSize * 0.9;
 			TextBlock txAmountInView = new TextBlock() { Text = $"(${Math.Round(amountInView, 2)})", Width = leftItemWidth, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontSize = amountFontSize };
-			AddCoreAdornment(txPercentInView, leftMargin, chartHeightPixels / 2.0 - fontSize * 2 - amountFontSize / 3);
-			AddCoreAdornment(txAmountInView, leftMargin + 20, chartHeightPixels / 2.0 + amountFontSize / 4);
+			AddCoreAdornment(txPercentInView, leftMargin + 5, chartHeightPixels / 2.0 - fontSize * 1.5 - amountFontSize / 2);
+			AddCoreAdornment(txAmountInView, leftMargin + 20, chartHeightPixels / 2.0 - amountFontSize / 4);
 		}
 
 		private void AddCoreAdornment(FrameworkElement element, int left, double top)
@@ -794,7 +794,7 @@ namespace TickGraphCore
 			double horizontalMargin = grdContainer.Margin.Left + grdContainer.Margin.Right;
 			double verticalMargin = grdContainer.Margin.Top + grdContainer.Margin.Bottom;
 
-			Canvas.SetTop(vbUpDownArrows, e.NewSize.Height / 2 - 185);
+			Canvas.SetTop(vbUpDownArrows, e.NewSize.Height / 2 - 125);
 
 			chartWidthPixels = e.NewSize.Width - horizontalMargin - 60;
 			chartHeightPixels = e.NewSize.Height - verticalMargin - 100;
@@ -876,7 +876,7 @@ namespace TickGraphCore
 
 		private void sldDataDensity_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
 		{
-			if (sldDataDensity.Value < INT_MinDataDensity)
+			if (sldDataDensity.Value < INT_MinDataDensity - 3)
 			{
 				ClearDataDensityPoints();
 				DrawGraph();
