@@ -11,6 +11,7 @@ namespace BotTraderCore
 		internal object stockDataPointsLock = new object();
 		List<StockDataPoint> stockDataPoints = new List<StockDataPoint>();  // access protected by stockDataPointsLock
 		List<ChangeSummary> changeSummaries = new List<ChangeSummary>();  // access protected by stockDataPointsLock
+		public List<StockDataPoint> StockDataPoints { get => stockDataPoints; }
 
 		public int MaxDataPointsToKeep { get; set; } = 500;
 
@@ -28,7 +29,6 @@ namespace BotTraderCore
 		ChangeSummary activeChangeSummary;  // access protected by stockDataPointsLock
 		StockDataPointsSnapshot lastSnapShot;
 
-		public List<StockDataPoint> StockDataPoints { get => stockDataPoints; }
 		public DateTime Start => start;
 		public DateTime End => end;
 		public decimal High => high;
@@ -42,7 +42,7 @@ namespace BotTraderCore
 			{
 				int count;
 				lock (stockDataPointsLock)
-					count = stockDataPoints.Count;
+					count = StockDataPoints.Count;
 				return count;
 			}
 		}
@@ -120,10 +120,10 @@ namespace BotTraderCore
 		/// <param name="newStockDataPoint">The new StockDataPoint we're about to add.</param>
 		private void RemoveMatchingDataPoints(StockDataPoint newStockDataPoint)
 		{
-			if (stockDataPoints.Count < 2)
+			if (StockDataPoints.Count < 2)
 				return;
-			int lastIndex = stockDataPoints.Count - 1;
-			StockDataPoint lastPointToRemove = stockDataPoints[lastIndex];
+			int lastIndex = StockDataPoints.Count - 1;
+			StockDataPoint lastPointToRemove = StockDataPoints[lastIndex];
 
 			if (lastPointToRemove.Tick.LastTradePrice == newStockDataPoint.Tick.LastTradePrice)
 			{
@@ -133,7 +133,7 @@ namespace BotTraderCore
 					activeChangeSummary = null;
 				}
 
-				if (stockDataPoints[lastIndex - 1].Tick.LastTradePrice == newStockDataPoint.Tick.LastTradePrice)  // Last two points, plus this one are the same. We can remove the middle point.
+				if (StockDataPoints[lastIndex - 1].Tick.LastTradePrice == newStockDataPoint.Tick.LastTradePrice)  // Last two points, plus this one are the same. We can remove the middle point.
 				{
 					// Track number of points removed... 
 					newStockDataPoint.Weight += lastPointToRemove.Weight;
@@ -145,7 +145,7 @@ namespace BotTraderCore
 						newStockDataPoint.Tick.HighestBidPrice = lastPointToRemove.Tick.HighestBidPrice;
 
 					// Remove the duplicate point...
-					stockDataPoints.RemoveAt(lastIndex);
+					StockDataPoints.RemoveAt(lastIndex);
 					onFlatLine = true;
 				}
 			}
