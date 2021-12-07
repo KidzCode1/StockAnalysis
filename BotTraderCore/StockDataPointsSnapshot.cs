@@ -7,8 +7,8 @@ namespace BotTraderCore
 {
 	public class StockDataPointsSnapshot
 	{
-		IReadOnlyCollection<StockDataPoint> dataPoints;
-		IReadOnlyCollection<ChangeSummary> changeSummaries;
+		readonly IReadOnlyCollection<StockDataPoint> dataPoints;
+		readonly IReadOnlyCollection<ChangeSummary> changeSummaries;
 
 		public StockDataPointsSnapshot(List<StockDataPoint> dataPoints, DateTime start, DateTime end, decimal low, decimal high, List<ChangeSummary> changeSummaries, ChangeSummary activeChangeSummary)
 		{

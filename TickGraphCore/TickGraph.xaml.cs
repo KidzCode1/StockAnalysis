@@ -26,7 +26,7 @@ namespace TickGraphCore
 
 		public void SelectAll()
 		{
-			Selection.Set(chartTranslator.Start, chartTranslator.End);
+			Selection.Set(chartTranslator.TradeHistory.Start, chartTranslator.TradeHistory.End);
 		}
 
 		public static readonly DependencyProperty ShowAnalysisProperty = DependencyProperty.Register("ShowAnalysis", typeof(bool), typeof(TickGraph), new FrameworkPropertyMetadata(false, new PropertyChangedCallback(OnShowAnalysisChanged)));
@@ -58,12 +58,12 @@ namespace TickGraphCore
 		bool mouseIsInsideGraph;
 		List<StockDataPoint> denseDataPoints;
 		List<CustomAdornment> lastCustomAdornments;
-		static SolidColorBrush noChangeBrushSolid = new SolidColorBrush(Color.FromArgb(255, 164, 74, 255));
-		static SolidColorBrush noChangeBrushHalfOpacity = new SolidColorBrush(Color.FromArgb(128, 164, 74, 255));
-		static SolidColorBrush riseBrushSolid = new SolidColorBrush(Color.FromArgb(255, 0, 75, 125));
-		static SolidColorBrush riseBrushHalfOpacity = new SolidColorBrush(Color.FromArgb(128, 0, 75, 125));
-		static SolidColorBrush fallBrushSolid = new SolidColorBrush(Color.FromRgb(196, 47, 47));
-		static SolidColorBrush fallBrushHalfOpacity = new SolidColorBrush(Color.FromArgb(128, 196, 47, 47));
+		readonly static SolidColorBrush noChangeBrushSolid = new SolidColorBrush(Color.FromArgb(255, 164, 74, 255));
+		readonly static SolidColorBrush noChangeBrushHalfOpacity = new SolidColorBrush(Color.FromArgb(128, 164, 74, 255));
+		readonly static SolidColorBrush riseBrushSolid = new SolidColorBrush(Color.FromArgb(255, 0, 75, 125));
+		readonly static SolidColorBrush riseBrushHalfOpacity = new SolidColorBrush(Color.FromArgb(128, 0, 75, 125));
+		readonly static SolidColorBrush fallBrushSolid = new SolidColorBrush(Color.FromRgb(196, 47, 47));
+		readonly static SolidColorBrush fallBrushHalfOpacity = new SolidColorBrush(Color.FromArgb(128, 196, 47, 47));
 
 		public TickGraph()
 		{
@@ -74,21 +74,19 @@ namespace TickGraphCore
 
 		private static void OnShowAnalysisChanged(DependencyObject o, DependencyPropertyChangedEventArgs e)
 		{
-			TickGraph tickGraph = o as TickGraph;
-			if (tickGraph != null)
+			if (o is TickGraph tickGraph)
 				tickGraph.OnShowAnalysisChanged((bool)e.OldValue, (bool)e.NewValue);
 		}
 
 		private static void OnUseChangeSummariesChanged(DependencyObject o, DependencyPropertyChangedEventArgs e)
 		{
-			TickGraph tickGraph = o as TickGraph;
-			if (tickGraph != null)
+			if (o is TickGraph tickGraph)
 				tickGraph.OnUseChangeSummariesChanged((bool)e.OldValue, (bool)e.NewValue);
 		}
 
 		protected virtual void OnUseChangeSummariesChanged(bool oldValue, bool newValue)
 		{
-			chartTranslator.ChangedSinceLastDataDensityQuery = true;
+			chartTranslator.TradeHistory.ChangedSinceLastDataDensityQuery = true;
 			DrawGraph();
 		}
 
@@ -126,7 +124,7 @@ namespace TickGraphCore
 			cvsCustomAdornments.Children.Add(element);
 		}
 
-		private bool OnLeftSide(double x)
+		public bool OnLeftSide(double x)
 		{
 			return x < chartWidthPixels / 2;
 		}
@@ -193,7 +191,6 @@ namespace TickGraphCore
 			tbTimeHoursMinutesSeconds.Text = $"{nearestPoint.Time:hh:mm:ss}";
 			tbTimeFraction.Text = $"{nearestPoint.Time:fff}";
 			grdStockTickDetails.Visibility = Visibility.Visible;
-			double yPos = y - 34;
 
 			double dotX = x;
 			double dotY = y;
@@ -264,12 +261,12 @@ namespace TickGraphCore
 
 		private static Line CreateLine(double lastX, double lastY, double x, double y, double lineThickness = 1)
 		{
-			Line line = new Line();
-			line.X1 = lastX;
-			line.Y1 = lastY;
-			line.X2 = x;
-			line.Y2 = y;
-			line.StrokeThickness = lineThickness;
+			Line line = new Line() { 
+										X1 = lastX, 
+										Y1 = lastY, 
+										X2 = x, 
+										Y2 = y, 
+										StrokeThickness = lineThickness };
 			return line;
 		}
 
@@ -278,10 +275,10 @@ namespace TickGraphCore
 			if (chartTranslator == null || !mouseIsInsideGraph)
 				return;
 			DateTime time = chartTranslator.GetTime(position.X, chartWidthPixels);
-			if (time >= chartTranslator.End || time <= chartTranslator.Start)
+			if (time >= chartTranslator.TradeHistory.End || time <= chartTranslator.TradeHistory.Start)
 				return;
-			TextBlock timeTextBlock = new TextBlock();
-			timeTextBlock.Text = time.ToString("dd MMM yyyy - hh:mm:ss.ff");
+
+			TextBlock timeTextBlock = new TextBlock() { Text = time.ToString("dd MMM yyyy - hh:mm:ss.ff") };
 
 			AddCoreAdornment(timeTextBlock);
 
@@ -305,10 +302,9 @@ namespace TickGraphCore
 			if (chartTranslator == null || !mouseIsInsideGraph)
 				return;
 			decimal price = chartTranslator.GetPrice(position.Y, chartHeightPixels);
-			if (price <= chartTranslator.Low || price >= chartTranslator.High)
+			if (price <= chartTranslator.TradeHistory.Low || price >= chartTranslator.TradeHistory.High)
 				return;
-			TextBlock priceTextBlock = new TextBlock();
-			priceTextBlock.Text = $" {Math.Round(price, 2):C}";  // No currency yet here.
+			TextBlock priceTextBlock = new TextBlock() { Text = $" {Math.Round(price, 2):C}"  /* No currency yet here.*/};
 			AddCoreAdornment(priceTextBlock);
 
 			if (position.Y > chartHeightPixels / 2)
@@ -397,8 +393,8 @@ namespace TickGraphCore
 
 		void DrawLabel(CustomAdornment customAdornment, Point point)
 		{
-			TextBlock textBlock = new TextBlock();
-			textBlock.Text = customAdornment.Name;
+			TextBlock textBlock = new TextBlock() { Text = customAdornment.Name };
+
 			switch (customAdornment.LabelAlignment)
 			{
 				case LabelAlignment.Left:
@@ -485,19 +481,19 @@ namespace TickGraphCore
 
 			int dataDensity = (int)Math.Round(sldDataDensity.Value);
 
-			if (dataDensity == 0 && chartTranslator.Count > MaxDataDensity)
+			if (dataDensity == 0 && chartTranslator.TradeHistory.Count > MaxDataDensity)
 				dataDensity = MaxDataDensity;
 
 			if (dataDensity > INT_MinDataDensity - 3)
 			{
-				if (denseDataPoints == null || chartTranslator.ChangedSinceLastDataDensityQuery)
-					denseDataPoints = chartTranslator.GetDataPointsAcrossSegments(dataDensity, UseChangeSummaries);
+				if (denseDataPoints == null || chartTranslator.TradeHistory.ChangedSinceLastDataDensityQuery)
+					denseDataPoints = chartTranslator.TradeHistory.GetDataPointsAcrossSegments(dataDensity, UseChangeSummaries);
 
 				DrawDataPoints(denseDataPoints);
 			}
 			else
 			{
-				StockDataPointsSnapshot stockDataPointSnapshot = chartTranslator.GetStockDataPointsSnapshot();
+				StockDataPointsSnapshot stockDataPointSnapshot = chartTranslator.TradeHistory.GetStockDataPointsSnapshot();
 				DrawDataPoints(stockDataPointSnapshot.DataPoints);
 			}
 
@@ -549,8 +545,8 @@ namespace TickGraphCore
 			if (chartTranslator == null)
 				return;
 
-			Rectangle selectionRect = new Rectangle();
-			selectionRect.Fill = new SolidColorBrush(Color.FromArgb(73, 54, 127, 255));
+			Rectangle selectionRect = new Rectangle() { Fill = new SolidColorBrush(Color.FromArgb(73, 54, 127, 255)) };
+
 			Canvas.SetTop(selectionRect, 0);
 			selectionRect.Height = cvsSelection.ActualHeight;
 
@@ -603,19 +599,6 @@ namespace TickGraphCore
 			}
 		}
 
-		StockDataPoint GetNearestPoint(double mouseX, double mouseY)
-		{
-			Ellipse closestEllipse = GetClosestEllipse(mouseX, mouseY);
-
-			// We're finally done checking all the points!!.
-			if (closestEllipse == null)
-				return null;
-
-			if (closestEllipse.Tag is StockDataPoint stockDataPoint)
-				return stockDataPoint;
-			return null;
-		}
-
 		private Ellipse GetClosestEllipse(double mouseX, double mouseY)
 		{
 			double closestDistanceSoFar = double.MaxValue;
@@ -663,15 +646,15 @@ namespace TickGraphCore
 			const double fontSize = 14;
 			const int leftMargin = -80;
 			const int leftItemWidth = -leftMargin - 10;
-			TextBlock txLow = new TextBlock() { Text = $"{chartTranslator.Low:C}", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
-			TextBlock txHigh = new TextBlock() { Text = $"{chartTranslator.High:C}", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
+			TextBlock txLow = new TextBlock() { Text = $"{chartTranslator.TradeHistory.Low:C}", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
+			TextBlock txHigh = new TextBlock() { Text = $"{chartTranslator.TradeHistory.High:C}", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
 
 			AddCoreAdornment(txHigh, leftMargin, -fontSize);
 			AddCoreAdornment(txLow, leftMargin, chartHeightPixels - fontSize);
 
 
-			decimal amountInView = chartTranslator.High - chartTranslator.Low;
-			decimal percentInView = amountInView / chartTranslator.High * 100;
+			decimal amountInView = chartTranslator.TradeHistory.AmountInView;
+			decimal percentInView = chartTranslator.TradeHistory.PercentInView;
 			TextBlock txPercentInView = new TextBlock() { Text = $"{Math.Round(percentInView, 2)}%", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize * 1.2 };
 			double amountFontSize = fontSize * 0.9;
 			TextBlock txAmountInView = new TextBlock() { Text = $"(${Math.Round(amountInView, 2)})", Width = leftItemWidth, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontSize = amountFontSize };
@@ -824,7 +807,7 @@ namespace TickGraphCore
 
 		public void SaveData(string fullPathToFile)
 		{
-			chartTranslator.SaveAll(fullPathToFile);
+			chartTranslator.TradeHistory.SaveAll(fullPathToFile);
 
 			//List<StockDataPoint> loadedPoints = StockDataPoint.Load(fullPathToFile);
 
@@ -847,13 +830,13 @@ namespace TickGraphCore
 			cvsHints.Visibility = Visibility.Visible;
 		}
 
-		private void cvsBackground_MouseEnter(object sender, MouseEventArgs e)
+		private void CvsBackground_MouseEnter(object sender, MouseEventArgs e)
 		{
 			mouseIsInsideGraph = true;
 			RefreshGraph();
 		}
 
-		private void cvsBackground_MouseLeave(object sender, MouseEventArgs e)
+		private void CvsBackground_MouseLeave(object sender, MouseEventArgs e)
 		{
 			mouseIsInsideGraph = false;
 			vbHintLL.Visibility = Visibility.Hidden;
@@ -874,7 +857,7 @@ namespace TickGraphCore
 			denseDataPoints = null;
 		}
 
-		private void sldDataDensity_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+		private void SldDataDensity_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
 		{
 			if (sldDataDensity.Value < INT_MinDataDensity - 3)
 			{
@@ -882,7 +865,7 @@ namespace TickGraphCore
 				DrawGraph();
 				return;
 			}
-			denseDataPoints = chartTranslator.GetDataPointsAcrossSegments((int)Math.Round(sldDataDensity.Value), UseChangeSummaries);
+			denseDataPoints = chartTranslator.TradeHistory.GetDataPointsAcrossSegments((int)Math.Round(sldDataDensity.Value), UseChangeSummaries);
 			DrawGraph();
 		}
 	}

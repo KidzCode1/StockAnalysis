@@ -26,8 +26,8 @@ namespace BotTraderCore
 
 		public static bool operator ==(StockDataPoint left, StockDataPoint right)
 		{
-			if (ReferenceEquals(left, null))
-				return ReferenceEquals(right, null);
+			if (left is null)
+				return right is null;
 			else
 				return left.Equals(right);
 		}
@@ -44,8 +44,8 @@ namespace BotTraderCore
 
 		public override bool Equals(object obj)
 		{
-			if (obj is StockDataPoint)
-				return Equals((StockDataPoint)obj);
+			if (obj is StockDataPoint stockDataPoint)
+				return Equals(stockDataPoint);
 			else
 				return base.Equals(obj);
 		}
@@ -53,7 +53,7 @@ namespace BotTraderCore
 		public bool Equals(StockDataPoint comparePoint)
 		{
 			// For structs, you can remove the following check:
-			if (ReferenceEquals(comparePoint, null))
+			if (comparePoint is null)
 				return false;
 			if (Time != comparePoint.Time)
 				return false;

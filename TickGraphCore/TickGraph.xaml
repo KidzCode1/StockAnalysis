@@ -30,7 +30,7 @@
 			</Canvas>
 		</Viewbox>
 	</UserControl.Resources>
-	<Grid x:Name="grdContainer" Margin="15" MouseEnter="cvsBackground_MouseEnter" MouseLeave="cvsBackground_MouseLeave">
+	<Grid x:Name="grdContainer" Margin="15" MouseEnter="CvsBackground_MouseEnter" MouseLeave="CvsBackground_MouseLeave">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="20"/>
             <ColumnDefinition/>
@@ -205,7 +205,7 @@
 			</Canvas>
 		</Canvas>
 
-		<Slider x:Name="sldDataDensity" ValueChanged="sldDataDensity_ValueChanged" Value="0" Minimum="0" Maximum="300" Margin="0, -30, 0, 0" Grid.Column="1">
+		<Slider x:Name="sldDataDensity" ValueChanged="SldDataDensity_ValueChanged" Value="0" Minimum="0" Maximum="300" Margin="0, -30, 0, 0" Grid.Column="1">
 			
 		</Slider>
 	</Grid>

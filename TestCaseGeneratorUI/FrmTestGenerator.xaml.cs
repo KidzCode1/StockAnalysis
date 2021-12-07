@@ -29,7 +29,7 @@ namespace TestCaseGeneratorUI
 			lstVariables.ItemsSource = variables;
 		}
 
-		private void btnSelectAll_Click(object sender, RoutedEventArgs e)
+		private void BtnSelectAll_Click(object sender, RoutedEventArgs e)
 		{
 			tickGraph.SelectAll();
 		}
@@ -44,7 +44,7 @@ namespace TestCaseGeneratorUI
 
 		}
 
-		ObservableCollection<TestVariable> variables = new ObservableCollection<TestVariable>();
+		readonly ObservableCollection<TestVariable> variables = new ObservableCollection<TestVariable>();
 
 		List<CustomAdornment> customAdornments;
 
@@ -63,20 +63,7 @@ namespace TestCaseGeneratorUI
 
 			foreach (TestVariable testVariable in variables)
 			{
-				CustomAdornment customAdornment = new CustomAdornment();
-				customAdornment.Key = testVariable.Key;
-				customAdornment.Name = testVariable.Name;
-				customAdornment.Time = testVariable.Time;
-				customAdornment.Price = testVariable.Price;
-				customAdornment.Size = testVariable.Size;
-				customAdornment.IconLeftOffset = testVariable.IconLeftOffset;
-				customAdornment.IconTopOffset = testVariable.IconTopOffset;
-				customAdornment.LabelLeftOffset = testVariable.LabelLeftOffset;
-				customAdornment.LabelTopOffset = testVariable.LabelTopOffset;
-				customAdornment.LabelAlignment = testVariable.LabelAlignment;
-				customAdornment.DashedLineOption = testVariable.DashedLineOption;
-				customAdornment.Color = testVariable.Color;
-
+				CustomAdornment customAdornment = new CustomAdornment() { Key = testVariable.Key, Name = testVariable.Name, Time = testVariable.Time, Price = testVariable.Price, Size = testVariable.Size, IconLeftOffset = testVariable.IconLeftOffset, IconTopOffset = testVariable.IconTopOffset, LabelLeftOffset = testVariable.LabelLeftOffset, LabelTopOffset = testVariable.LabelTopOffset, LabelAlignment = testVariable.LabelAlignment, DashedLineOption = testVariable.DashedLineOption, Color = testVariable.Color };
 
 				if (customAdornments == null)
 					customAdornments = new List<CustomAdornment>();
@@ -100,22 +87,22 @@ namespace TestCaseGeneratorUI
 			return "var" + numVariablesCreated++;
 		}
 
-		private void miTime_Click(object sender, RoutedEventArgs e)
+		private void MiTime_Click(object sender, RoutedEventArgs e)
 		{
 			AddVariable(new TestVariableTime(GetNewVariableName(), timeAtMouse));
 		}
 
-		private void miPrice_Click(object sender, RoutedEventArgs e)
+		private void MiPrice_Click(object sender, RoutedEventArgs e)
 		{
 			AddVariable(new TestVariablePrice(GetNewVariableName(), priceAtMouse));
 		}
 
-		private void miDataPoint_Click(object sender, RoutedEventArgs e)
+		private void MiDataPoint_Click(object sender, RoutedEventArgs e)
 		{
 
 		}
 
-		private void miDataRange_Click(object sender, RoutedEventArgs e)
+		private void MiDataRange_Click(object sender, RoutedEventArgs e)
 		{
 
 		}
@@ -188,7 +175,7 @@ namespace TestCaseGeneratorUI
 				pngImage.Save(fileStream);
 			return screenShotName;
 		}
-		private void btnGenerateTest_Click(object sender, RoutedEventArgs e)
+		private void BtnGenerateTest_Click(object sender, RoutedEventArgs e)
 		{
 			string testDataFileName = Guid.NewGuid().ToString() + ".json";
 			string projectFolder = Folders.GetProjectFolderName();
@@ -215,7 +202,8 @@ namespace TestCaseGeneratorUI
 			}
 
 			code.AppendLine("}");
-			string codeSoFar = code.ToString();
+
+			//string codeSoFar = code.ToString();
 			// TODO: Build the end of the test case!!!
 			//			tickGraph.SaveData(Folders.GetTestFilePath("Test3.json"));
 

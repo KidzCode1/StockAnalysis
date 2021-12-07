@@ -9,10 +9,10 @@
     <Window.Resources>
         <ContextMenu x:Key="AddVariableMenu" ContextMenuOpening="ContextMenu_ContextMenuOpening" Opened="ContextMenu_Opened">
             <MenuItem Header="New Variable:" IsEnabled="False" />
-            <MenuItem x:Name="miTime" Header="Time" Click="miTime_Click"/>
-            <MenuItem x:Name="miPrice" Header="Price" Click="miPrice_Click"/>
-            <MenuItem x:Name="miDataPoint" Header="Data Point" Click="miDataPoint_Click"/>
-            <MenuItem x:Name="miDataRange" Header="Data Range" Click="miDataRange_Click"/>
+            <MenuItem x:Name="miTime" Header="Time" Click="MiTime_Click"/>
+            <MenuItem x:Name="miPrice" Header="Price" Click="MiPrice_Click"/>
+            <MenuItem x:Name="miDataPoint" Header="Data Point" Click="MiDataPoint_Click"/>
+            <MenuItem x:Name="miDataRange" Header="Data Range" Click="MiDataRange_Click"/>
         </ContextMenu>
     </Window.Resources>
     <StackPanel Orientation="Vertical" Margin="80,0,0,0" >
@@ -39,10 +39,10 @@
         </StackPanel>
         
         <StackPanel Orientation="Horizontal">
-        	<Button x:Name="btnGenerateTest" Width="250" Height="90" FontSize="35" Click="btnGenerateTest_Click">
+        	<Button x:Name="btnGenerateTest" Width="250" Height="90" FontSize="35" Click="BtnGenerateTest_Click">
          	    Generate Test!
             </Button>
-            <Button x:Name="btnSelectAll" Width="180" FontSize="35" Margin="30, 0, 0, 0" Click="btnSelectAll_Click">
+            <Button x:Name="btnSelectAll" Width="180" FontSize="35" Margin="30, 0, 0, 0" Click="BtnSelectAll_Click">
                 Select All
             </Button>
         </StackPanel>

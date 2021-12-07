@@ -145,6 +145,7 @@
     <Compile Include="StockDataPointsSnapshot.cs" />
     <Compile Include="TestData.cs" />
     <Compile Include="TickRange.cs" />
+    <Compile Include="TradeHistory.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="app.config" />
