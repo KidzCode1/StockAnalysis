@@ -97,7 +97,7 @@ namespace BotTraderCore
 			{
 				DateTime timeAtDataPoint = TradeHistory.Start + TimeSpan.FromSeconds(i * secondsPerDataPoint);
 				TickRange tickRange = TradeHistory.GetPointsAroundTime(timeAtDataPoint, timeSpanSeconds);
-				decimal averagePrice = TradeHistory.GetAveragePrice(tickRange.DataPoints);
+				decimal averagePrice = TradeHistory.CalculateAveragePrice(tickRange.DataPoints);
 				if (averagePrice == decimal.MinValue)
 					continue;
 				double stockPositionX = GetStockPositionX(timeAtDataPoint, chartWidthPixels);

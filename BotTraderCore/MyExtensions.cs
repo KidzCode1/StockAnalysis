@@ -21,13 +21,13 @@ namespace BotTraderCore
 			return strDec.Contains(sep) ? strDec.TrimEnd('0').TrimEnd(sep.ToCharArray()) : strDec;
 		}
 
-		public static void Save(this List<StockDataPoint> points, string fileName)
+		public static void Save(this List<DataPoint> points, string fileName)
 		{
 			string serializeObject = JsonConvert.SerializeObject(points, Formatting.Indented);
 			File.WriteAllText(fileName, serializeObject);
 		}
 
-		public static bool Matches(this List<StockDataPoint> range1, List<StockDataPoint> range2)
+		public static bool Matches(this List<DataPoint> range1, List<DataPoint> range2)
 		{
 			if (range1.Count != range2.Count)
 				return false;

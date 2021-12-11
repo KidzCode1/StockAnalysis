@@ -7,31 +7,31 @@ using System.Linq;
 
 namespace BotTraderCore
 {
-	public class StockDataPoint
+	public class DataPoint
 	{
 		public CustomTick Tick { get; set; }
 		public DateTime Time { get; set; }
 
 		public int Weight { get; set; }
-		public StockDataPoint(CustomTick tick)
+		public DataPoint(CustomTick tick)
 		{
 			Tick = tick;
 			Time = DateTime.Now;
 			Weight = 1;
 		}
-		public StockDataPoint()
+		public DataPoint()
 		{
 			Weight = 1;
 		}
 
-		public static bool operator ==(StockDataPoint left, StockDataPoint right)
+		public static bool operator ==(DataPoint left, DataPoint right)
 		{
 			if (left is null)
 				return right is null;
 			else
 				return left.Equals(right);
 		}
-		public static bool operator !=(StockDataPoint left, StockDataPoint right)
+		public static bool operator !=(DataPoint left, DataPoint right)
 		{
 			return !(left == right);
 		}
@@ -44,13 +44,13 @@ namespace BotTraderCore
 
 		public override bool Equals(object obj)
 		{
-			if (obj is StockDataPoint stockDataPoint)
+			if (obj is DataPoint stockDataPoint)
 				return Equals(stockDataPoint);
 			else
 				return base.Equals(obj);
 		}
 
-		public bool Equals(StockDataPoint comparePoint)
+		public bool Equals(DataPoint comparePoint)
 		{
 			// For structs, you can remove the following check:
 			if (comparePoint is null)
@@ -67,16 +67,16 @@ namespace BotTraderCore
 			return true;
 		}
 
-		public static List<StockDataPoint> Load(string fullPathToFile)
+		public static List<DataPoint> Load(string fullPathToFile)
 		{
 			string readFromFileStr = File.ReadAllText(fullPathToFile);
-			List<StockDataPoint> data = JsonConvert.DeserializeObject<List<StockDataPoint>>(readFromFileStr);
+			List<DataPoint> data = JsonConvert.DeserializeObject<List<DataPoint>>(readFromFileStr);
 			return data;
 		}
 
-		public StockDataPoint Clone(DateTime timeOverride)
+		public DataPoint Clone(DateTime timeOverride)
 		{
-			return new StockDataPoint(Tick) { Time = timeOverride };
+			return new DataPoint(Tick) { Time = timeOverride };
 		}
 	}
 }

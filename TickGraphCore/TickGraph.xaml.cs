@@ -37,6 +37,7 @@ namespace TickGraphCore
 			get => (bool)GetValue(ShowAnalysisProperty);
 			set => SetValue(ShowAnalysisProperty, value);
 		}
+
 		public static readonly DependencyProperty UseChangeSummariesProperty = DependencyProperty.Register("UseChangeSummaries", typeof(bool), typeof(TickGraph), new FrameworkPropertyMetadata(false, new PropertyChangedCallback(OnUseChangeSummariesChanged)));
 
 		public bool UseChangeSummaries
@@ -56,7 +57,7 @@ namespace TickGraphCore
 
 		ChartTranslator chartTranslator;
 		bool mouseIsInsideGraph;
-		List<StockDataPoint> denseDataPoints;
+		List<DataPoint> denseDataPoints;
 		List<CustomAdornment> lastCustomAdornments;
 		readonly static SolidColorBrush noChangeBrushSolid = new SolidColorBrush(Color.FromArgb(255, 164, 74, 255));
 		readonly static SolidColorBrush noChangeBrushHalfOpacity = new SolidColorBrush(Color.FromArgb(128, 164, 74, 255));
@@ -177,7 +178,7 @@ namespace TickGraphCore
 			cvsHints.Visibility = Visibility.Visible;
 		}
 
-		public void ShowHintData(double x, double y, StockDataPoint nearestPoint)
+		public void ShowHintData(double x, double y, DataPoint nearestPoint)
 		{
 			string symbol = nearestPoint.Tick.Symbol;
 			string currency = string.Empty;
@@ -225,7 +226,7 @@ namespace TickGraphCore
 			}
 		}
 
-		private void AddDot(double lastY, double x, double y, StockDataPoint stockDataPoint)
+		private void AddDot(double lastY, double x, double y, DataPoint stockDataPoint)
 		{
 			Ellipse dot = new Ellipse() { Fill = GetFillBrush(lastY, y, 128), Width = INT_DotDiameter, Height = INT_DotDiameter };
 			Canvas.SetLeft(dot, x - INT_DotRadius);
@@ -493,7 +494,7 @@ namespace TickGraphCore
 			}
 			else
 			{
-				StockDataPointsSnapshot stockDataPointSnapshot = chartTranslator.TradeHistory.GetStockDataPointsSnapshot();
+				DataPointsSnapshot stockDataPointSnapshot = chartTranslator.TradeHistory.GetSnapshot();
 				DrawDataPoints(stockDataPointSnapshot.DataPoints);
 			}
 
@@ -510,7 +511,7 @@ namespace TickGraphCore
 			DrawCustomAdornments(customAdornments);
 		}
 
-		private void DrawDataPoints(IEnumerable<StockDataPoint> stockDataPoints)
+		private void DrawDataPoints(IEnumerable<DataPoint> stockDataPoints)
 		{
 			if (stockDataPoints == null)
 				return;
@@ -518,7 +519,7 @@ namespace TickGraphCore
 			bool alreadyDrawnAtLeastOnePoint = false;
 			double lastX = double.MinValue;
 			double lastY = double.MinValue;
-			foreach (StockDataPoint stockDataPoint in stockDataPoints)
+			foreach (DataPoint stockDataPoint in stockDataPoints)
 			{
 				double x = chartTranslator.GetStockPositionX(stockDataPoint.Time, chartWidthPixels);
 				double y = chartTranslator.GetStockPositionY(stockDataPoint.Tick.LastTradePrice, chartHeightPixels);
@@ -693,7 +694,7 @@ namespace TickGraphCore
 				double y = GetY(closestEllipse);
 				AddHighlightCircle(x, y);
 
-				StockDataPoint nearestPoint = closestEllipse.Tag as StockDataPoint;
+				DataPoint nearestPoint = closestEllipse.Tag as DataPoint;
 				if (nearestPoint != null)
 				{
 					//Title = $"{nearestPoint.Tick.LastTradePrice}";
@@ -808,16 +809,8 @@ namespace TickGraphCore
 		public void SaveData(string fullPathToFile)
 		{
 			chartTranslator.TradeHistory.SaveAll(fullPathToFile);
-
-			//List<StockDataPoint> loadedPoints = StockDataPoint.Load(fullPathToFile);
-
-			//if (selectedPoints.Matches(loadedPoints))
-			//{
-			//	Title = "It worked!";
-			//}
-			//else
-			//	Title = "Failure!";
 		}
+
 		public void HideCoreAdornments()
 		{
 			cvsCoreAdornments.Visibility = Visibility.Hidden;

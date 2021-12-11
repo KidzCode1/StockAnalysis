@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Bittrex.Net.Objects;
+using System;
 using System.Linq;
 
 namespace BotTraderCore
@@ -10,10 +11,10 @@ namespace BotTraderCore
 	/// </summary>
 	public class ChangeSummary
 	{
-		public StockDataPoint Start { get; set; }
-		public StockDataPoint End { get; set; }
-		public StockDataPoint High { get; set; }
-		public StockDataPoint Low { get; set; }
+		public DataPoint Start { get; set; }
+		public DataPoint End { get; set; }
+		public DataPoint High { get; set; }
+		public DataPoint Low { get; set; }
 
 		/// <summary>
 		/// The number of points this summary represents.
