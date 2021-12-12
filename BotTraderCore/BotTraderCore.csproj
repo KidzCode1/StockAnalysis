@@ -33,6 +33,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Binance.Net, Version=7.2.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\BotTrader\BotTrader\packages\Binance.Net.7.2.6\lib\netstandard2.0\Binance.Net.dll</HintPath>
+    </Reference>
     <Reference Include="Bittrex.Net, Version=6.1.5.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\..\..\BotTrader\BotTrader\packages\Bittrex.Net.6.1.5\lib\netstandard2.0\Bittrex.Net.dll</HintPath>
     </Reference>
@@ -149,8 +152,11 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AvailableTrades.cs" />
+    <Compile Include="BinanceSymbolLookup.cs" />
     <Compile Include="ChartTranslator.cs" />
     <Compile Include="CustomTick.cs" />
+    <Compile Include="ExchangeName.cs" />
     <Compile Include="Folders.cs" />
     <Compile Include="MyExtensions.cs" />
     <Compile Include="PointXY.cs" />

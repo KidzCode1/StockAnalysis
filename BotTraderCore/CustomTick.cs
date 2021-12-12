@@ -1,4 +1,5 @@
-﻿using Bittrex.Net.Objects;
+﻿using Binance.Net.Interfaces;
+using Bittrex.Net.Objects;
 using Newtonsoft.Json;
 using System;
 using System.Linq;
@@ -21,6 +22,9 @@ namespace BotTraderCore
 		[JsonProperty(PropertyName = "Ask")]
 		public decimal LowestAskPrice { get; set; }
 
+		[JsonProperty(PropertyName = "Volume")]
+		public decimal QuoteVolume { get; set; }
+
 		// Constructors allocate (set aside or provide) memory for an **instance** of a Class.
 		// Constructors instantiate. Create **new** things.
 		public CustomTick(BittrexTick bittrexTick)  // Happens here.
@@ -35,6 +39,15 @@ namespace BotTraderCore
 
 		public CustomTick()
 		{
+		}
+
+		public CustomTick(IBinanceTick iBinanceTick)
+		{
+			Symbol = iBinanceTick.Symbol;
+			LastTradePrice = iBinanceTick.LastPrice;
+			HighestBidPrice = iBinanceTick.BidPrice;
+			LowestAskPrice = iBinanceTick.AskPrice;
+			QuoteVolume = iBinanceTick.QuoteVolume;
 		}
 
 		public static bool operator ==(CustomTick left, CustomTick right)
