@@ -35,7 +35,7 @@
             <ColumnDefinition Width="20"/>
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
-		<Canvas x:Name="cvsBackground" Height="700" Width="600" Grid.Column="1" >
+		<Canvas x:Name="cvsBackground" Height="700" Width="900" Grid.Column="1" >
 			<!--This is so the preview mouse events get sent.-->
 			<Rectangle x:Name="rctBackground" Height="700" Width="600" Stroke="#FFBFBFFF" Fill="#01ffffff" ></Rectangle>
             <Viewbox x:Name="vbUpDownArrows" Width="35" Canvas.Left="-45">

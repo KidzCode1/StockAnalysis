@@ -17,7 +17,7 @@
     </Window.Resources>
     <StackPanel Orientation="Vertical" Margin="80,0,0,0" >
         <StackPanel Orientation="Horizontal">
-            <tickGraphCore:TickGraph x:Name="tickGraph" Height="600" ContextMenu="{StaticResource AddVariableMenu}">
+            <tickGraphCore:TickGraph x:Name="tickGraph" Height="600" Width="900" ContextMenu="{StaticResource AddVariableMenu}">
 
             </tickGraphCore:TickGraph>
             <StackPanel Orientation="Vertical">

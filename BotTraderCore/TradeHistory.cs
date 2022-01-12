@@ -4,10 +4,11 @@ using System.Linq;
 using System.Diagnostics;
 using System.Collections.Generic;
 using Newtonsoft.Json;
+using System.ComponentModel;
 
 namespace BotTraderCore
 {
-	public class TradeHistory
+	public class TradeHistory: INotifyPropertyChanged
 	{
 		internal readonly object dataLock = new object();
 		ChangeSummary activeRangeSummary;  // access protected by dataLock
@@ -25,6 +26,12 @@ namespace BotTraderCore
 		DateTime end;
 		decimal low = 35000;
 		decimal high = 37000;
+		int saveDataPointCount;
+		bool needToSaveData;
+		string saveFileName;
+		DateTime saveTime;
+
+		public event PropertyChangedEventHandler PropertyChanged;
 
 		/// <summary>
 		/// The weighted total price of all trades in this history. Weighted because 
@@ -55,11 +62,16 @@ namespace BotTraderCore
 			}
 		}
 
-		public TradeHistory()
+		public TradeHistory(string symbolPair = null)
 		{
+			SymbolPair = symbolPair;
 		}
 
-		public decimal AmountInView => High - Low;
+		/// <summary>
+		/// The value amount (in the quote currency) represented by all the points in this
+		/// trade history. The highest value minus the lowest.
+		/// </summary>
+		public decimal ValueSpan => High - Low;
 
 		public bool ChangedSinceLastDataDensityQuery
 		{
@@ -67,7 +79,7 @@ namespace BotTraderCore
 			set { changedSinceLastDataDensityQuery = value; }
 		}
 
-		public int Count
+		public int DataPointCount
 		{
 			get
 			{
@@ -85,13 +97,46 @@ namespace BotTraderCore
 
 		public int MaxDataPointsToKeep { get; set; } = 500;
 
-		public decimal PercentInView => AmountInView / High * 100;
+		public decimal PercentInView => ValueSpan / High * 100;
 		public TimeSpan SpanAcross => End - Start;
 
 		public List<DataPoint> StockDataPoints => stockDataPoints;
+		public string SymbolPair { get; set; }
+
+		/// <summary>
+		/// DataPoints representing buy signals for this trade history.
+		/// </summary>
+		public List<DataPoint> BuySignals { get; set; } = new List<DataPoint>();
+
+		public void BeginUpdate()
+		{
+			saveDataPointCount = DataPointCount;
+		}
+
+		public void EndUpdate()
+		{
+			if (saveDataPointCount == DataPointCount)
+				return;
+
+			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DataPointCount)));
+		}
+
+		public void AddStockPositionWithUpdate(CustomTick data, DateTime? timeOverride)
+		{
+			BeginUpdate();
+			try
+			{
+				AddStockPosition(data, timeOverride);
+			}
+			finally
+			{
+				EndUpdate();
+			}
+		}
 
 		public DataPoint AddStockPosition(CustomTick data, DateTime? timeOverride = null)
 		{
+			BeginUpdate();
 			DataPoint stockDataPoint = new DataPoint(data);
 
 			if (timeOverride != null)
@@ -116,11 +161,20 @@ namespace BotTraderCore
 			changedSinceLastDataDensityQuery = true;
 			changedSinceLastSnapshot = true;
 
+			EndUpdate();
+
+			if (needToSaveData && saveTime < DateTime.Now)
+			{
+				needToSaveData = false;
+				SaveAll(saveFileName);
+			}
+
 			return stockDataPoint;
 		}
 
 		private void RemoveOldDataPoints(DataPoint newestDataPoint)
 		{
+			BeginUpdate();
 			DataPoint removed = StockDataPoints[0];
 			lock (dataLock)
 			{
@@ -137,6 +191,8 @@ namespace BotTraderCore
 				CalculateBounds();  // We need to recalculate everything.
 			else  // Only the start and end have changed...
 				AdjustBounds(newestDataPoint);
+
+			EndUpdate();
 		}
 
 		private void UpdateRangeSummaries(DataPoint stockDataPoint)
@@ -416,6 +472,9 @@ namespace BotTraderCore
 			end = latestDataPoint.Time;
 		}
 
+		/// <summary>
+		/// Returns true if the two specified prices are close in value (to within 0.02%).
+		/// </summary>
 		bool AreClose(decimal price1, decimal price2)
 		{
 			decimal averagePrice = (price1 + price2) / 2;
@@ -437,9 +496,13 @@ namespace BotTraderCore
 			}
 		}
 
-		bool IsHighOrLow(CustomTick first)
+		/// <summary>
+		/// Returns true if the specified tick price matches the existing high or low price for 
+		/// the trade history.
+		/// </summary>
+		bool IsHighOrLow(CustomTick tick)
 		{
-			return first.LastTradePrice == High || first.LastTradePrice == Low;
+			return tick.LastTradePrice == High || tick.LastTradePrice == Low;
 		}
 
 		/// <summary>
@@ -526,13 +589,28 @@ namespace BotTraderCore
 		/// </summary>
 		public void CalculateBounds()
 		{
+			SetPriceBounds();
+			SetTimeBounds();
+		}
+
+		/// <summary>
+		/// Sets the high and low price bounds for the history.
+		/// </summary>
+		private void SetPriceBounds()
+		{
 			high = 0;
 			low = decimal.MaxValue;
 			lock (dataLock)
 				foreach (DataPoint stockDataPoint in StockDataPoints)
 					SetHighLow(stockDataPoint.Tick);
 			CheckHighLow();
+		}
 
+		/// <summary>
+		/// Sets the Start and End time bounds for the history.
+		/// </summary>
+		private void SetTimeBounds()
+		{
 			lock (dataLock)
 			{
 				if (StockDataPoints.Count == 0)
@@ -547,13 +625,20 @@ namespace BotTraderCore
 			}
 		}
 
+		/// <summary>
+		/// Clears all data points.
+		/// </summary>
 		public void Clear()
 		{
+			BeginUpdate();
+
 			lock (dataLock)
 			{
 				StockDataPoints.Clear();
 				changeSummaries.Clear();
 			}
+
+			EndUpdate();
 		}
 
 		///// <param name="redistributePoints">If true, points will be redistributed away from flats (no change) toward 
@@ -631,6 +716,9 @@ namespace BotTraderCore
 			return results;
 		}
 
+		/// <summary>
+		/// Gets the DataPoint from the history that is nearest to the specified time.
+		/// </summary>
 		public DataPoint GetNearestPointInTime(DateTime time)
 		{
 			double closestSpanSoFar = double.MaxValue;
@@ -648,6 +736,13 @@ namespace BotTraderCore
 			return closestDataPoint;
 		}
 
+		/// <summary>
+		/// Collects all the points close to the specified center point, contained within the 
+		/// specified TimeSpan.
+		/// </summary>
+		/// <param name="timeCenterPoint">The time point on which to center the search.</param>
+		/// <param name="timeSpanSeconds">The total time span (centered on the center point) to search.</param>
+		/// <returns>All the points in the specified range.</returns>
 		public TickRange GetPointsAroundTime(DateTime timeCenterPoint, int timeSpanSeconds)
 		{
 			double halfTimeSpan = timeSpanSeconds / 2.0;
@@ -658,6 +753,9 @@ namespace BotTraderCore
 			return GetPointsInRange(startRange, endRange);
 		}
 
+		/// <summary>
+		/// Gets all the points in the specified range.
+		/// </summary>
 		public TickRange GetPointsInRange(DateTime start, DateTime end)
 		{
 			TickRange tickRange = new TickRange() { DataPoints = new List<DataPoint>(), };
@@ -705,6 +803,9 @@ namespace BotTraderCore
 			return tickRange;
 		}
 
+		/// <summary>
+		/// Gets a read-only snapshot of the trade history.
+		/// </summary>
 		public DataPointsSnapshot GetSnapshot()
 		{
 			if (!changedSinceLastSnapshot)
@@ -718,7 +819,8 @@ namespace BotTraderCore
 					low,
 					high,
 					changeSummaries,
-					activeRangeSummary);
+					activeRangeSummary,
+					BuySignals);
 
 			changedSinceLastSnapshot = false;
 
@@ -746,17 +848,23 @@ namespace BotTraderCore
 			if (points.Count == 0)
 				return;
 
+			BeginUpdate();
+
 			lock (dataLock)
 				StockDataPoints.AddRange(points);
 			//start = points[0].Time;
 			//end = points[points.Count - 1].Time;
 			CalculateBounds();
+
+			EndUpdate();
 		}
 
 		public void SetTickRange(TickRange tickRange)
 		{
 			if (tickRange.DataPoints.Count == 0)
 				return;
+
+			BeginUpdate();
 
 			lock (dataLock)
 			{
@@ -767,6 +875,8 @@ namespace BotTraderCore
 			CalculateBounds();
 			start = tickRange.Start;
 			end = tickRange.End;
+
+			EndUpdate();
 		}
 
 		/// <summary>
@@ -779,8 +889,16 @@ namespace BotTraderCore
 			if (args.Length % 2 != 0)
 				throw new ArgumentException($"Must pass an even number of args to {nameof(TestAddDataPoints)}.");
 
-			for (int i = 0; i < args.Length; i += 2)
-				TestAddStockDataPoint(args[i], (double)args[i + 1]);
+			BeginUpdate();
+			try
+			{
+				for (int i = 0; i < args.Length; i += 2)
+					TestAddStockDataPoint(args[i], (double)args[i + 1]);
+			}
+			finally
+			{
+				EndUpdate();
+			}
 
 			CalculateBounds();
 		}
@@ -791,8 +909,16 @@ namespace BotTraderCore
 		/// <param name="args"></param>
 		public void TestAddPriceSequence(params decimal[] args)
 		{
-			for (int i = 0; i < args.Length; i++)
-				TestAddStockDataPoint(args[i], i);
+			BeginUpdate();
+			try
+			{
+				for (int i = 0; i < args.Length; i++)
+					TestAddStockDataPoint(args[i], i);
+			}
+			finally
+			{
+				EndUpdate();
+			}
 
 			CalculateBounds();
 		}
@@ -822,12 +948,57 @@ namespace BotTraderCore
 		/// <param name="count">The number of data points to create.</param>
 		public void TestAddRandomPriceSequence(int count)
 		{
-			RandomTickGenerator testTickerGenerator = new RandomTickGenerator();
-			for (int i = 0; i < count; i++)
+			BeginUpdate();
+			try
 			{
-				CustomTick newCustomTick = testTickerGenerator.GetNewCustomTick();
-				AddStockPosition(newCustomTick, DateTime.MinValue + TimeSpan.FromSeconds(i));
+				RandomTickGenerator testTickerGenerator = new RandomTickGenerator();
+				for (int i = 0; i < count; i++)
+				{
+					CustomTick newCustomTick = testTickerGenerator.GetNewCustomTick();
+					AddStockPosition(newCustomTick, DateTime.MinValue + TimeSpan.FromSeconds(i));
+				}
 			}
+			finally
+			{
+				EndUpdate();
+			}
+		}
+
+		/// <summary>
+		/// Stretches the time span across all the data points to match the specified duration.
+		/// </summary>
+		public void TestStretchTimeSpanTo(TimeSpan targetTimeSpan)
+		{
+			double stretchFactor = (double)targetTimeSpan.Ticks / SpanAcross.Ticks;
+			lock (dataLock)
+			{
+				foreach (DataPoint dataPoint in StockDataPoints)
+				{
+					long ticksToPoint = dataPoint.Time.Ticks - start.Ticks;
+					double adjustedTicks = ticksToPoint * stretchFactor;
+					dataPoint.Time = start + TimeSpan.FromTicks((long)adjustedTicks);
+				}
+			}
+			SetTimeBounds();
+		}
+
+		/// <summary>
+		/// Marks this TradeHistory as needing to save, and saves the history after the specified 
+		/// time elapses (when a new data point arrives after the specified time span).
+		/// </summary>
+		/// <param name="timeSpan">The TimeSpan to wait before saving.</param>
+		/// <param name="fileName">The name of the file to save to.</param>
+		public void SaveDataIn(TimeSpan timeSpan, string fileName)
+		{
+			saveFileName = fileName;
+			needToSaveData = true;
+			saveTime = DateTime.Now + timeSpan;
+		}
+
+		public void AddBuySignal(DataPoint dataPoint)
+		{
+			lock (dataLock)
+				BuySignals.Add(dataPoint);
 		}
 	}
 }

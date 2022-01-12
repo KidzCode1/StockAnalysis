@@ -8,6 +8,7 @@ using System.Windows.Shapes;
 using System.Windows.Controls;
 using System.Collections.Generic;
 using BotTraderCore;
+using System.Windows.Documents;
 
 namespace TickGraphCore
 {
@@ -47,8 +48,13 @@ namespace TickGraphCore
 			set => SetValue(UseChangeSummariesProperty, value);
 		}
 
+		public TradeHistory TradeHistory => chartTranslator?.TradeHistory;
+
 		const double INT_DotDiameter = 6;
 		const double INT_DotRadius = INT_DotDiameter / 2;
+		const double INT_BuySignalDiameter = INT_DotDiameter * 3;
+		const double INT_BuySignalRadius = INT_BuySignalDiameter / 2;
+		const double INT_BuySignalThickness = 2;
 		const int INT_MinDataDensity = 8;
 		const int INT_MaxDataDensity = 150;
 
@@ -224,6 +230,15 @@ namespace TickGraphCore
 				lastX = point.X;
 				lastY = point.Y;
 			}
+		}
+
+		void AddBuySignal(double x, double y, DataPoint dataPoint)
+		{
+			Ellipse buySignal = new Ellipse() { Stroke = Brushes.Blue, Opacity = 0.15, Width = INT_BuySignalDiameter, Height = INT_BuySignalDiameter, StrokeThickness = INT_BuySignalThickness };
+			Canvas.SetLeft(buySignal, x - INT_BuySignalRadius);
+			Canvas.SetTop(buySignal, y - INT_BuySignalRadius);
+			AddElement(buySignal);
+			buySignal.Tag = dataPoint;
 		}
 
 		private void AddDot(double lastY, double x, double y, DataPoint stockDataPoint)
@@ -482,8 +497,10 @@ namespace TickGraphCore
 
 			int dataDensity = (int)Math.Round(sldDataDensity.Value);
 
-			if (dataDensity == 0 && chartTranslator.TradeHistory.Count > MaxDataDensity)
+			if (dataDensity == 0 && chartTranslator.TradeHistory.DataPointCount > MaxDataDensity)
 				dataDensity = MaxDataDensity;
+
+			List<DataPoint> buySignals;
 
 			if (dataDensity > INT_MinDataDensity - 3)
 			{
@@ -491,11 +508,20 @@ namespace TickGraphCore
 					denseDataPoints = chartTranslator.TradeHistory.GetDataPointsAcrossSegments(dataDensity, UseChangeSummaries);
 
 				DrawDataPoints(denseDataPoints);
+				buySignals = chartTranslator.TradeHistory.BuySignals.ToList();
 			}
 			else
 			{
 				DataPointsSnapshot stockDataPointSnapshot = chartTranslator.TradeHistory.GetSnapshot();
 				DrawDataPoints(stockDataPointSnapshot.DataPoints);
+				
+				buySignals = stockDataPointSnapshot.BuySignals;
+			}
+
+			
+			if (buySignals != null && buySignals.Count > 0)
+			{
+				DrawBuySignals(buySignals);
 			}
 
 
@@ -509,6 +535,19 @@ namespace TickGraphCore
 			UpdateSelection();
 			DrawAnalysisCharts();
 			DrawCustomAdornments(customAdornments);
+		}
+
+		void DrawBuySignals(List<DataPoint> buySignals)
+		{
+			if (buySignals == null)
+				return;
+
+			foreach (DataPoint dataPoint in buySignals)
+			{
+				double x = chartTranslator.GetStockPositionX(dataPoint.Time, chartWidthPixels);
+				double y = chartTranslator.GetStockPositionY(dataPoint.Tick.LastTradePrice, chartHeightPixels);
+				AddBuySignal(x, y, dataPoint);
+			}
 		}
 
 		private void DrawDataPoints(IEnumerable<DataPoint> stockDataPoints)
@@ -654,7 +693,7 @@ namespace TickGraphCore
 			AddCoreAdornment(txLow, leftMargin, chartHeightPixels - fontSize);
 
 
-			decimal amountInView = chartTranslator.TradeHistory.AmountInView;
+			decimal amountInView = chartTranslator.TradeHistory.ValueSpan;
 			decimal percentInView = chartTranslator.TradeHistory.PercentInView;
 			TextBlock txPercentInView = new TextBlock() { Text = $"{Math.Round(percentInView, 2)}%", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize * 1.2 };
 			double amountFontSize = fontSize * 0.9;
@@ -859,6 +898,15 @@ namespace TickGraphCore
 				return;
 			}
 			denseDataPoints = chartTranslator.TradeHistory.GetDataPointsAcrossSegments((int)Math.Round(sldDataDensity.Value), UseChangeSummaries);
+			DrawGraph();
+		}
+
+		public void SetTradeHistory(TradeHistory tradeHistory)
+		{
+			if (chartTranslator == null)
+				return;
+			chartTranslator.TradeHistory = tradeHistory;
+			ClearDataDensityPoints();
 			DrawGraph();
 		}
 	}
