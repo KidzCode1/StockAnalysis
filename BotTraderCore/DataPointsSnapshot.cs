@@ -429,9 +429,8 @@ namespace BotTraderCore
 			} while (results.Count < segmentCount);
 
 
-			DataPoint last = DataPoints.ElementAt(DataPoints.Count - 1);
-
-			results.Add(last);
+			if (DataPoints.Count > 0)
+				results.Add(DataPoints.ElementAt(DataPoints.Count - 1));
 
 			if (addChangeSummaries)
 				AddChangeSummaries(results, segmentQuarterSpanSeconds);
