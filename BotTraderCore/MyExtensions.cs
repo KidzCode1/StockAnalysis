@@ -17,8 +17,14 @@ namespace BotTraderCore
 		public static string GetNum(this decimal value, int numDigits = 29)
 		{
 			string sep = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
-			string strDec = value.ToString("#,0." + new string('#', numDigits), CultureInfo.CurrentCulture);
-			return strDec.Contains(sep) ? strDec.TrimEnd('0').TrimEnd(sep.ToCharArray()) : strDec;
+			string strDec;
+			if (numDigits > 0)
+			{
+				strDec = value.ToString("#,0." + new string('#', numDigits), CultureInfo.CurrentCulture);
+				return strDec.Contains(sep) ? strDec.TrimEnd('0').TrimEnd(sep.ToCharArray()) : strDec;
+			}
+			else
+				return value.ToString("#,0", CultureInfo.CurrentCulture);
 		}
 
 		public static void Save(this List<DataPoint> points, string fileName)

@@ -48,7 +48,7 @@ namespace TickGraphCore
 			set => SetValue(UseChangeSummariesProperty, value);
 		}
 
-		public TradeHistory TradeHistory => chartTranslator?.TradeHistory;
+		public ITradeHistory TradeHistory => chartTranslator?.TradeHistory;
 
 		const double INT_DotDiameter = 6;
 		const double INT_DotRadius = INT_DotDiameter / 2;
@@ -93,7 +93,8 @@ namespace TickGraphCore
 
 		protected virtual void OnUseChangeSummariesChanged(bool oldValue, bool newValue)
 		{
-			chartTranslator.TradeHistory.ChangedSinceLastDataDensityQuery = true;
+			if (chartTranslator.TradeHistory is IUpdatableTradeHistory updatableTradeHistory)
+				updatableTradeHistory.ChangedSinceLastDataDensityQuery = true;
 			DrawGraph();
 		}
 
@@ -158,12 +159,12 @@ namespace TickGraphCore
 			if (viewbox == vbHintLL)
 			{
 				vbHintLL.Visibility = Visibility.Visible;
-				calloutOffsetY = -100;
+				calloutOffsetY = -118;
 			}
 			else if (viewbox == vbHintLR)
 			{
 				vbHintLR.Visibility = Visibility.Visible;
-				calloutOffsetY = -100;
+				calloutOffsetY = -118;
 				calloutOffsetX = -220;
 			}
 			else if (viewbox == vbHintUR)
@@ -184,19 +185,28 @@ namespace TickGraphCore
 			cvsHints.Visibility = Visibility.Visible;
 		}
 
+		string GetUSD(decimal lastTradePrice, int decimals = 9)
+		{
+			return (TradeHistory.QuoteCurrencyToUsdConversion * lastTradePrice).GetNum(decimals);
+		}
+
 		public void ShowHintData(double x, double y, DataPoint nearestPoint)
 		{
-			string symbol = nearestPoint.Tick.Symbol;
-			string currency = string.Empty;
-			int dashIndex = symbol.IndexOf("-");
-			if (dashIndex >= 0)
-				currency = symbol.Substring(dashIndex + 1);
-			tbTradePrice.Text = $"{nearestPoint.Tick.LastTradePrice.GetNum(9)} {currency}";
-			tbHighestBid.Text = $"{nearestPoint.Tick.HighestBidPrice.GetNum(9)} {currency}";
-			tbLowestAsk.Text = $"{nearestPoint.Tick.LowestAskPrice.GetNum(9)} {currency}";
+			CustomTick tick = nearestPoint.Tick;
+
+			tbTradePrice.Text = $"${GetUSD(tick.LastTradePrice)}";
+			if (tick.QuoteVolume == 0)
+				tbTradeVolume.Text = "(not available)";
+			else
+				tbTradeVolume.Text = $"${GetUSD(tick.QuoteVolume, 0)}";
+			tbHighestBid.Text = $"${GetUSD(tick.HighestBidPrice)}";
+			tbLowestAsk.Text = $"${GetUSD(tick.LowestAskPrice)}";
+
 			tbDate.Text = $"{nearestPoint.Time:yyy MMM dd}";
+
 			tbTimeHoursMinutesSeconds.Text = $"{nearestPoint.Time:hh:mm:ss}";
 			tbTimeFraction.Text = $"{nearestPoint.Time:fff}";
+
 			grdStockTickDetails.Visibility = Visibility.Visible;
 
 			double dotX = x;
@@ -234,7 +244,7 @@ namespace TickGraphCore
 
 		void AddBuySignal(double x, double y, DataPoint dataPoint)
 		{
-			Ellipse buySignal = new Ellipse() { Stroke = Brushes.Blue, Opacity = 0.15, Width = INT_BuySignalDiameter, Height = INT_BuySignalDiameter, StrokeThickness = INT_BuySignalThickness };
+			Ellipse buySignal = new Ellipse() { Stroke = Brushes.Blue, Opacity = 0.4, Width = INT_BuySignalDiameter, Height = INT_BuySignalDiameter, StrokeThickness = INT_BuySignalThickness };
 			Canvas.SetLeft(buySignal, x - INT_BuySignalRadius);
 			Canvas.SetTop(buySignal, y - INT_BuySignalRadius);
 			AddElement(buySignal);
@@ -504,7 +514,7 @@ namespace TickGraphCore
 
 			if (dataDensity > INT_MinDataDensity - 3)
 			{
-				if (denseDataPoints == null || chartTranslator.TradeHistory.ChangedSinceLastDataDensityQuery)
+				if (denseDataPoints == null || (chartTranslator.TradeHistory as IUpdatableTradeHistory)?.ChangedSinceLastDataDensityQuery == true)
 					denseDataPoints = chartTranslator.TradeHistory.GetDataPointsAcrossSegments(dataDensity, UseChangeSummaries);
 
 				DrawDataPoints(denseDataPoints);
@@ -542,7 +552,8 @@ namespace TickGraphCore
 			if (buySignals == null)
 				return;
 
-			foreach (DataPoint dataPoint in buySignals)
+			DataPoint dataPoint = buySignals.FirstOrDefault();
+			if (dataPoint != null)
 			{
 				double x = chartTranslator.GetStockPositionX(dataPoint.Time, chartWidthPixels);
 				double y = chartTranslator.GetStockPositionY(dataPoint.Tick.LastTradePrice, chartHeightPixels);
@@ -686,18 +697,18 @@ namespace TickGraphCore
 			const double fontSize = 14;
 			const int leftMargin = -80;
 			const int leftItemWidth = -leftMargin - 10;
-			TextBlock txLow = new TextBlock() { Text = $"{chartTranslator.TradeHistory.Low:C}", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
-			TextBlock txHigh = new TextBlock() { Text = $"{chartTranslator.TradeHistory.High:C}", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
+			TextBlock txLow = new TextBlock() { Text = $"${GetUSD(chartTranslator.TradeHistory.Low)}", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
+			TextBlock txHigh = new TextBlock() { Text = $"${GetUSD(chartTranslator.TradeHistory.High)}", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
 
 			AddCoreAdornment(txHigh, leftMargin, -fontSize);
 			AddCoreAdornment(txLow, leftMargin, chartHeightPixels - fontSize);
 
 
-			decimal amountInView = chartTranslator.TradeHistory.ValueSpan;
+			string amountInView = GetUSD(chartTranslator.TradeHistory.ValueSpan, 2);
 			decimal percentInView = chartTranslator.TradeHistory.PercentInView;
 			TextBlock txPercentInView = new TextBlock() { Text = $"{Math.Round(percentInView, 2)}%", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize * 1.2 };
 			double amountFontSize = fontSize * 0.9;
-			TextBlock txAmountInView = new TextBlock() { Text = $"(${Math.Round(amountInView, 2)})", Width = leftItemWidth, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontSize = amountFontSize };
+			TextBlock txAmountInView = new TextBlock() { Text = $"(${amountInView})", Width = leftItemWidth, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontSize = amountFontSize };
 			AddCoreAdornment(txPercentInView, leftMargin + 5, chartHeightPixels / 2.0 - fontSize * 1.5 - amountFontSize / 2);
 			AddCoreAdornment(txAmountInView, leftMargin + 20, chartHeightPixels / 2.0 - amountFontSize / 4);
 		}
@@ -845,9 +856,9 @@ namespace TickGraphCore
 			return chartTranslator.GetPrice(lastMousePosition.Y, chartHeightPixels);
 		}
 
-		public void SaveData(string fullPathToFile)
+		public void SaveTickRange(string fullPathToFile)
 		{
-			chartTranslator.TradeHistory.SaveAll(fullPathToFile);
+			chartTranslator.TradeHistory.SaveTickRange(fullPathToFile);
 		}
 
 		public void HideCoreAdornments()
@@ -901,7 +912,7 @@ namespace TickGraphCore
 			DrawGraph();
 		}
 
-		public void SetTradeHistory(TradeHistory tradeHistory)
+		public void SetTradeHistory(ITradeHistory tradeHistory)
 		{
 			if (chartTranslator == null)
 				return;

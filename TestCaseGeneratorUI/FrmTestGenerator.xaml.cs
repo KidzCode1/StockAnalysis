@@ -181,7 +181,7 @@ namespace TestCaseGeneratorUI
 			string projectFolder = Folders.GetProjectFolderName();
 			string testCaseFolder = System.IO.Path.Combine(projectFolder, "BotTraderTests\\TestData");
 			string fullPathTestDataFileName = System.IO.Path.Combine(testCaseFolder, testDataFileName);
-			tickGraph.SaveData(fullPathTestDataFileName);
+			tickGraph.SaveTickRange(fullPathTestDataFileName);
 
 			string screenShotName = SaveScreenShot();
 			StringBuilder code = new StringBuilder();

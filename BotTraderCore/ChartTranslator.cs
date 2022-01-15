@@ -8,7 +8,8 @@ namespace BotTraderCore
 {
 	public class ChartTranslator
 	{
-		public TradeHistory TradeHistory { get; set; } = new TradeHistory();
+		public ITradeHistory TradeHistory { get; set; } = new TradeHistory();
+		public IUpdatableTradeHistory UpdatableTradeHistory => TradeHistory as IUpdatableTradeHistory;
 
 		public ChartTranslator()
 		{
@@ -83,6 +84,12 @@ namespace BotTraderCore
 
 		public List<PointXY> GetMovingAverages(int timeSpanSeconds, double chartWidthPixels, double chartHeightPixels)
 		{
+			if (UpdatableTradeHistory == null)
+			{
+				Debugger.Break();
+				return null;
+			}
+
 			TimeSpan timeAcross = TradeHistory.SpanAcross;
 			double totalSecondsAcross = timeAcross.TotalSeconds;
 			const int numberOfDataPoints = 200;
@@ -96,8 +103,9 @@ namespace BotTraderCore
 			for (int i = 0; i < numberOfDataPoints; i++)
 			{
 				DateTime timeAtDataPoint = TradeHistory.Start + TimeSpan.FromSeconds(i * secondsPerDataPoint);
-				TickRange tickRange = TradeHistory.GetPointsAroundTime(timeAtDataPoint, timeSpanSeconds);
-				decimal averagePrice = TradeHistory.CalculateAveragePrice(tickRange.DataPoints);
+
+				TickRange tickRange = UpdatableTradeHistory.GetPointsAroundTime(timeAtDataPoint, timeSpanSeconds);
+				decimal averagePrice = BotTraderCore.TradeHistory.CalculateAveragePrice(tickRange.DataPoints);
 				if (averagePrice == decimal.MinValue)
 					continue;
 				double stockPositionX = GetStockPositionX(timeAtDataPoint, chartWidthPixels);
@@ -106,6 +114,24 @@ namespace BotTraderCore
 				points.Add(point);
 			}
 			return points;
+		}
+
+		public void SetTickRange(TickRange tickRange)
+		{
+			if (TradeHistory is IUpdatableTradeHistory updatableTradeHistory)
+				updatableTradeHistory.SetTickRange(tickRange);
+		}
+
+		public void AddStockPositionWithUpdate(CustomTick ourData, DateTime? timeOverride)
+		{
+			if (TradeHistory is IUpdatableTradeHistory updatableTradeHistory)
+				updatableTradeHistory.AddStockPositionWithUpdate(ourData, timeOverride);
+		}
+
+		public void Clear()
+		{
+			if (TradeHistory is IUpdatableTradeHistory updatableTradeHistory)
+				updatableTradeHistory.Clear();
 		}
 	}
 }
