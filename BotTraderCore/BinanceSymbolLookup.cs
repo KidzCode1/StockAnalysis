@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Text;
 using System.Collections.Generic;
 using System.Windows;
 using System.Threading;
@@ -24,6 +25,10 @@ namespace BotTraderCore
 			return null;
 		}
 
+		static Dictionary<string, int> rightSideCounts = new Dictionary<string, int>();
+		static List<string> quoteCurrenciesSortedByLengthAndCount;
+
+
 		static void AddPair(string binanceSymbol, string dashedPair)
 		{
 			int indexOfDash = dashedPair.IndexOf("-");
@@ -31,6 +36,12 @@ namespace BotTraderCore
 			{
 				string left = dashedPair.Substring(0, indexOfDash);
 				string right = dashedPair.Substring(indexOfDash + 1);
+
+				if (rightSideCounts.ContainsKey(right))
+					rightSideCounts[right]++;
+				else
+					rightSideCounts[right] = 1;
+
 				if (!availableTrades.ContainsKey(left))
 					availableTrades[left] = new AvailableTrades(left);
 				if (!availableTrades.ContainsKey(right))
@@ -41,6 +52,18 @@ namespace BotTraderCore
 
 			channelNameToDashedPair[binanceSymbol] = dashedPair;
 			dashedPairToChannelName[dashedPair] = binanceSymbol;
+		}
+
+		public static void SetClipboardText(string text)
+		{
+			Thread STAThread = new Thread(
+					delegate ()
+					{
+						Clipboard.SetText(text);
+					});
+			STAThread.SetApartmentState(ApartmentState.STA);
+			STAThread.Start();
+			STAThread.Join();
 		}
 
 		static void AddPairs()
@@ -666,7 +689,7 @@ namespace BotTraderCore
 			AddPair("DYDXBTC", "DYDX-BTC");
 			AddPair("IDEXUSDT", "IDEX-USDT");
 			AddPair("SOLBIDR", "SOL-BIDR");
-			AddPair("BTCUSDP", "BTC--USDP");
+			AddPair("BTCUSDP", "BTC-USDP");
 			AddPair("GALAUSDT", "GALA-USDT");
 			AddPair("GALABUSD", "GALA-BUSD");
 			AddPair("GALABNB", "GALA-BNB");
@@ -804,7 +827,7 @@ namespace BotTraderCore
 			AddPair("WRXBNB", "WRX-BNB");
 			AddPair("WRXUSDT", "WRX-USDT");
 			AddPair("STPTBTC", "STPT-BTC");
-			AddPair("BNBIDRT", "BNB--IDRT");
+			AddPair("BNBIDRT", "BNB-IDRT");
 			AddPair("CTSIBTC", "CTSI-BTC");
 			AddPair("WRXBUSD", "WRX-BUSD");
 			AddPair("STMXETH", "STMX-ETH");
@@ -1482,31 +1505,87 @@ namespace BotTraderCore
 			AddPair("ACHBTC", "ACH-BTC");
 			AddPair("IMXBTC", "IMX-BTC");
 			AddPair("IMXBUSD", "IMX-BUSD");
-		}
-
-		public static void SetClipboardText(string text)
-		{
-			Thread STAThread = new Thread(
-					delegate ()
-					{
-						Clipboard.SetText(text);
-					});
-			STAThread.SetApartmentState(ApartmentState.STA);
-			STAThread.Start();
-			STAThread.Join();
+			AddPair("GLMRBTC", "GLMR-BTC");
+			AddPair("GLMRBUSD", "GLMR-BUSD");
+			AddPair("GLMRUSDT", "GLMR-USDT");
+			AddPair("ATOMBIDR", "ATOM-BIDR");
+			AddPair("ICPTRY", "ICP-TRY");
+			AddPair("LINABNB", "LINA-BNB");
+			AddPair("OOKIETH", "OOKI-ETH");
+			AddPair("ROSEETH", "ROSE-ETH");
+			AddPair("UMABUSD", "UMA-BUSD");
+			AddPair("DYDXETH", "DYDX-ETH");
+			AddPair("FARMETH", "FARM-ETH");
+			AddPair("XTZETH", "XTZ-ETH");
+			AddPair("UNIETH", "UNI-ETH");
+			AddPair("FORBNB", "FOR-BNB");
+			AddPair("JASMYETH", "JASMY-ETH");
+			PrepareForAutoPairSplit();
+			ReportOnRightSideCounts();
 		}
 
 		public static string GetDashedPair(string channelName)
 		{
 			if (!channelNameToDashedPair.ContainsKey(channelName))
 			{
-				string code = $"AddPair(\"{channelName}\", \"{channelName}\");";
+				string suggestedSplit = channelName;
+				foreach (string quoteCurrency in quoteCurrenciesSortedByLengthAndCount)
+				{
+					if (channelName.EndsWith(quoteCurrency))
+					{
+						suggestedSplit = channelName.Substring(0, channelName.Length - quoteCurrency.Length) + "-" + quoteCurrency;
+						break;
+					}
+				}
+				
+				string code = $"AddPair(\"{channelName}\", \"{suggestedSplit}\");";
 				SetClipboardText(code);
 
 				System.Diagnostics.Debugger.Break();
-				AddPair("IMXBUSD", "IMX-BUSD");
+				AddPair("AVAXUSD", "AVAX-USD");
 			}
 			return channelNameToDashedPair[channelName];
+		}
+
+		public class CurrencyCountPair
+		{
+			public string CurrencySymbol { get; set; }
+			public int Count { get; set; }
+
+			public CurrencyCountPair(string currencySymbol, int count)
+			{
+				CurrencySymbol = currencySymbol;
+				Count = count;
+			}
+
+			public CurrencyCountPair()
+			{
+			}
+		}
+
+		static void PrepareForAutoPairSplit()
+		{
+			List<CurrencyCountPair> pairs = new List<CurrencyCountPair>();
+			foreach (string key in rightSideCounts.Keys)
+				pairs.Add(new CurrencyCountPair(key, rightSideCounts[key]));
+
+			IOrderedEnumerable<CurrencyCountPair> sortedByLength = pairs.OrderByDescending(x => x.CurrencySymbol.Length).ThenByDescending(y => y.Count);
+			quoteCurrenciesSortedByLengthAndCount = sortedByLength.Select(z => z.CurrencySymbol).ToList();
+		}
+
+		static void ReportOnRightSideCounts()
+		{
+			List<CurrencyCountPair> pairs = new List<CurrencyCountPair>();
+			foreach (string key in rightSideCounts.Keys)
+			{
+				pairs.Add(new CurrencyCountPair(key, rightSideCounts[key]));
+			}
+			IOrderedEnumerable<CurrencyCountPair> sorted = pairs.OrderByDescending(x => x.Count);
+			StringBuilder stringBuilder = new StringBuilder();
+			stringBuilder.AppendLine($"  Binance Currency Symbols:");
+			foreach (CurrencyCountPair pair in sorted)
+				stringBuilder.AppendLine($"  {pair.CurrencySymbol} - {pair.Count}");
+			string results = stringBuilder.ToString();
 		}
 
 		public static string GetChannel(string symbol1, string symbol2)
@@ -1522,6 +1601,11 @@ namespace BotTraderCore
 		public static string GetChannelName(string dashedPair)
 		{
 			return dashedPairToChannelName[dashedPair];
+		}
+
+		public static bool HasQuoteCurrency(string symbol)
+		{
+			return rightSideCounts.ContainsKey(symbol);
 		}
 	}
 }
