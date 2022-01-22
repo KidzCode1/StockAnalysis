@@ -48,12 +48,19 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Page Include="FrmZoom.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="TickGraph.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
     <Compile Include="CustomAdornment.cs" />
     <Compile Include="DashedLineOption.cs" />
+    <Compile Include="FrmZoom.xaml.cs">
+      <DependentUpon>FrmZoom.xaml</DependentUpon>
+    </Compile>
     <Compile Include="LabelAlignment.cs" />
     <Compile Include="Selection.cs" />
     <Compile Include="SelectionModes.cs" />

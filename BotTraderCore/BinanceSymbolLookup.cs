@@ -1520,6 +1520,20 @@ namespace BotTraderCore
 			AddPair("UNIETH", "UNI-ETH");
 			AddPair("FORBNB", "FOR-BNB");
 			AddPair("JASMYETH", "JASMY-ETH");
+			AddPair("LOKABTC", "LOKA-BTC");
+			AddPair("LOKABNB", "LOKA-BNB");
+			AddPair("LOKABUSD", "LOKA-BUSD");
+			AddPair("LOKAUSDT", "LOKA-USDT");
+			AddPair("ATOMBRL", "ATOM-BRL");
+			AddPair("CRVETH", "CRV-ETH");
+			AddPair("HIGHBNB", "HIGH-BNB");
+			AddPair("NEARRUB", "NEAR-RUB");
+			AddPair("ROSETRY", "ROSE-TRY");
+			AddPair("SCRTUSDT", "SCRT-USDT");
+			AddPair("API3BTC", "API3-BTC");
+			AddPair("API3BUSD", "API3-BUSD");
+			AddPair("API3USDT", "API3-USDT");
+			AddPair("BNBUST", "BNB-UST");
 			PrepareForAutoPairSplit();
 			ReportOnRightSideCounts();
 		}
@@ -1542,7 +1556,7 @@ namespace BotTraderCore
 				SetClipboardText(code);
 
 				System.Diagnostics.Debugger.Break();
-				AddPair("AVAXUSD", "AVAX-USD");
+				AddPair("BNBUST", "BNB-UST");
 			}
 			return channelNameToDashedPair[channelName];
 		}

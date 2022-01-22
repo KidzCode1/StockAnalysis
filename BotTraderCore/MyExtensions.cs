@@ -22,6 +22,7 @@ namespace BotTraderCore
 			{
 				strDec = value.ToString("#,0." + new string('#', numDigits), CultureInfo.CurrentCulture);
 				return strDec.Contains(sep) ? strDec.TrimEnd('0').TrimEnd(sep.ToCharArray()) : strDec;
+
 			}
 			else
 				return value.ToString("#,0", CultureInfo.CurrentCulture);

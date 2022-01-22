@@ -10,6 +10,8 @@ namespace BotTraderCore
 {
 	public class TradeHistory : INotifyPropertyChanged, IUpdatableTradeHistory
 	{
+		const int MaxDataPointAgeMinutes = 35;
+		public event EventHandler<TradeHistory> DataPointAdded;
 		internal readonly object dataLock = new object();
 		ChangeSummary activeRangeSummary;  // access protected by dataLock
 		readonly List<ChangeSummary> changeSummaries = new List<ChangeSummary>();  // access protected by dataLock
@@ -53,16 +55,51 @@ namespace BotTraderCore
 		{
 			get
 			{
-				decimal averagePrice;
+				decimal averagePrice = 0;
 
 				lock (dataLock)
-					averagePrice = WeightedTotalPrice / WeightedCount;
+					if (WeightedCount != 0)
+						averagePrice = WeightedTotalPrice / WeightedCount;
 
 				return averagePrice;
 			}
 		}
 
+		public decimal StandardDeviation
+		{
+			get
+			{
+				if (cacheStandardDeviation != decimal.MinValue)
+					return cacheStandardDeviation;
+				decimal sum = 0;
+				decimal count = 0;
+				decimal averagePrice = AveragePrice;
+
+				lock (dataLock)
+					foreach (DataPoint stockDataPoint in StockDataPoints)
+					{
+						decimal deviation = stockDataPoint.Tick.LastTradePrice - averagePrice;
+						decimal deviationSquared = deviation * deviation;
+						sum += deviationSquared * stockDataPoint.Weight;
+						count += stockDataPoint.Weight;
+					}
+
+				if (count == 0)
+					cacheStandardDeviation = 0;
+				else
+					cacheStandardDeviation = sum / count;
+				return (decimal)Math.Sqrt((double)cacheStandardDeviation);
+			}
+		}
+
+		public void InvalidateDataPointCaches()
+		{
+			cacheStandardDeviation = decimal.MinValue;
+		}
+
+
 		decimal quoteCurrencyToUsdConversion;
+		decimal cacheStandardDeviation = decimal.MinValue;
 		public decimal QuoteCurrencyToUsdConversion => quoteCurrencyToUsdConversion;
 
 		public void SetQuoteCurrencyToUsdConversion(decimal amount)
@@ -139,7 +176,8 @@ namespace BotTraderCore
 		public decimal High => high;
 		public decimal Low => low;
 
-		public int MaxDataPointsToKeep { get; set; } = 500;
+		public int MaxDataPointsToKeep { get; set; } = 450;
+		public int MaxDataPointsToKeepWithBuySignal { get; set; } = 10000;
 
 		public decimal PercentInView => ValueSpan / High * 100;
 		public TimeSpan SpanAcross => End - Start;
@@ -152,17 +190,40 @@ namespace BotTraderCore
 		/// </summary>
 		public List<DataPoint> BuySignals { get; set; } = new List<DataPoint>();
 
+		/// <summary>
+		/// The average price at the time the first buy signal arrived.
+		/// </summary>
+		public decimal AveragePriceAtBuySignal { get; set; }
+
+		/// <summary>
+		/// The StandardDeviation at the time the first buy signal arrived.
+		/// </summary>
+		public decimal StandardDeviationAtBuySignal { get; set; }
+
+		public bool NeedToSaveData { get => needToSaveData; }
+
+		int updateCount;
+		bool changedDataPoints;
+		bool holdsTestData;
+
 		public void BeginUpdate()
 		{
+			if (updateCount == 0)
+				changedDataPoints = false;
+			updateCount++;
 			saveDataPointCount = DataPointCount;
 		}
 
 		public void EndUpdate()
 		{
-			if (saveDataPointCount == DataPointCount)
-				return;
+			updateCount--;
+			if (updateCount == 0)
+			{
+				if (saveDataPointCount == DataPointCount && !changedDataPoints)
+					return;
 
-			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DataPointCount)));
+				PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(DataPointCount)));
+			}
 		}
 
 		public void AddStockPositionWithUpdate(CustomTick data, DateTime? timeOverride)
@@ -176,6 +237,44 @@ namespace BotTraderCore
 			{
 				EndUpdate();
 			}
+		}
+
+		bool RemoveAgingDataPoints()
+		{
+			if (holdsTestData)
+				return false;
+
+			lock (dataLock)
+			{
+				if (HasBuySignal())
+					return false;  // If we have a buy signal, don't remove older points.
+
+				if (StockDataPoints.Count == 0)
+					return false;
+
+				DateTime now = DateTime.Now;
+				int numLeadingPointsToRemove = 0;
+				for (int i = 0; i < StockDataPoints.Count; i++)
+				{
+					if ((now - StockDataPoints[i].Time).TotalMinutes < MaxDataPointAgeMinutes)
+						break;
+
+					numLeadingPointsToRemove++;
+				}
+
+				if (numLeadingPointsToRemove == 0)
+					return false;
+
+				StockDataPoints.RemoveRange(0, numLeadingPointsToRemove);
+				changedDataPoints = true;
+			}
+			CalculateBounds();
+			return true;
+		}
+
+		private bool HasBuySignal()
+		{
+			return BuySignals != null && BuySignals.Count > 0;
 		}
 
 		public DataPoint AddStockPosition(CustomTick data, DateTime? timeOverride = null)
@@ -193,15 +292,19 @@ namespace BotTraderCore
 
 				RemoveMatchingDataPoints(stockDataPoint);
 				StockDataPoints.Add(stockDataPoint);
+				changedDataPoints = true;
 				UpdateRangeSummaries(stockDataPoint);
 			}
 
-			if (StockDataPoints.Count > MaxDataPointsToKeep)  // Only keep this many data points in history.
-				RemoveOldDataPoints(stockDataPoint);
-			else if (StockDataPoints.Count < 10)
-				CalculateBounds();
-			else
-				AdjustBounds(stockDataPoint);
+			bool removedOldDataPoints = RemoveAgingDataPoints();
+
+			if (NewMethod())
+				RemoveExcessDataPoints(stockDataPoint);
+			else if (!removedOldDataPoints)
+				if (StockDataPoints.Count < 10)
+					CalculateBounds();
+				else
+					AdjustBounds(stockDataPoint);
 			changedSinceLastDataDensityQuery = true;
 			changedSinceLastSnapshot = true;
 
@@ -215,18 +318,25 @@ namespace BotTraderCore
 				File.WriteAllText(saveFileName, snapshot);
 			}
 
+			DataPointAdded?.Invoke(this, this);
+
 			return stockDataPoint;
 		}
 
-		private void RemoveOldDataPoints(DataPoint newestDataPoint)
+		private bool NewMethod()
 		{
-			BeginUpdate();
+			return (StockDataPoints.Count > MaxDataPointsToKeep && !HasBuySignal()) || StockDataPoints.Count > MaxDataPointsToKeepWithBuySignal;
+		}
+
+		private void RemoveExcessDataPoints(DataPoint newestDataPoint)
+		{
 			DataPoint removed = StockDataPoints[0];
 			lock (dataLock)
 			{
 				WeightedCount -= removed.Weight;
 				WeightedTotalPrice -= removed.Tick.LastTradePrice * removed.Weight;
 				StockDataPoints.RemoveAt(0); // Remove oldest data point
+				changedDataPoints = true;
 			}
 
 			start = StockDataPoints[0].Time;
@@ -237,8 +347,6 @@ namespace BotTraderCore
 				CalculateBounds();  // We need to recalculate everything.
 			else  // Only the start and end have changed...
 				AdjustBounds(newestDataPoint);
-
-			EndUpdate();
 		}
 
 		private void UpdateRangeSummaries(DataPoint stockDataPoint)
@@ -319,6 +427,7 @@ namespace BotTraderCore
 			SetHighLow(latestDataPoint.Tick);
 			CheckHighLow();
 			end = latestDataPoint.Time;
+			InvalidateDataPointCaches();
 		}
 
 		/// <summary>
@@ -379,6 +488,7 @@ namespace BotTraderCore
 
 					// Remove the duplicate point...
 					StockDataPoints.RemoveAt(lastIndex);
+					changedDataPoints = true;
 					onFlatLine = true;
 				}
 			}
@@ -425,12 +535,13 @@ namespace BotTraderCore
 
 		/// <summary>
 		/// Goes through every StockDataPoint and finds the highest/lowest values,  and also sets the start and end of the
-		/// graph based on the times of the first  and last data points.
+		/// graph based on the times of the first and last data points.
 		/// </summary>
 		public void CalculateBounds()
 		{
 			SetPriceBounds();
 			SetTimeBounds();
+			InvalidateDataPointCaches();
 		}
 
 		/// <summary>
@@ -476,6 +587,8 @@ namespace BotTraderCore
 			{
 				StockDataPoints.Clear();
 				changeSummaries.Clear();
+				changedDataPoints = true;
+				CalculateBounds();
 			}
 
 			EndUpdate();
@@ -596,9 +709,9 @@ namespace BotTraderCore
 					high,
 					changeSummaries,
 					activeRangeSummary,
-					BuySignals, 
-					SymbolPair, 
-					QuoteCurrencyToUsdConversion);
+					BuySignals,
+					SymbolPair,
+					QuoteCurrencyToUsdConversion, AveragePriceAtBuySignal, StandardDeviationAtBuySignal);
 
 			changedSinceLastSnapshot = false;
 
@@ -625,6 +738,7 @@ namespace BotTraderCore
 
 			lock (dataLock)
 				StockDataPoints.AddRange(points);
+			changedDataPoints = true;
 			//start = points[0].Time;
 			//end = points[points.Count - 1].Time;
 			CalculateBounds();
@@ -643,6 +757,7 @@ namespace BotTraderCore
 			{
 				StockDataPoints.Clear();
 				StockDataPoints.AddRange(tickRange.DataPoints);
+				changedDataPoints = true;
 			}
 
 			CalculateBounds();
@@ -665,6 +780,7 @@ namespace BotTraderCore
 			BeginUpdate();
 			try
 			{
+				holdsTestData = true;
 				for (int i = 0; i < args.Length; i += 2)
 					TestAddStockDataPoint(args[i], (double)args[i + 1]);
 			}
@@ -685,6 +801,7 @@ namespace BotTraderCore
 			BeginUpdate();
 			try
 			{
+				holdsTestData = true;
 				for (int i = 0; i < args.Length; i++)
 					TestAddStockDataPoint(args[i], i);
 			}
@@ -703,6 +820,7 @@ namespace BotTraderCore
 		/// <param name="offsetSeconds"></param>
 		public void TestAddStockDataPoint(decimal price, double offsetSeconds)
 		{
+			holdsTestData = true;
 			AddStockPosition(
 				new CustomTick() { LastTradePrice = price, HighestBidPrice = price, LowestAskPrice = price, Symbol = "BTC" },
 				DateTime.MinValue + TimeSpan.FromSeconds(offsetSeconds));
@@ -718,6 +836,7 @@ namespace BotTraderCore
 			BeginUpdate();
 			try
 			{
+				holdsTestData = true;
 				RandomTickGenerator testTickerGenerator = new RandomTickGenerator();
 				for (int i = 0; i < count; i++)
 				{
@@ -736,6 +855,7 @@ namespace BotTraderCore
 		/// </summary>
 		public void TestStretchTimeSpanTo(TimeSpan targetTimeSpan)
 		{
+			holdsTestData = true;
 			double stretchFactor = (double)targetTimeSpan.Ticks / SpanAcross.Ticks;
 			lock (dataLock)
 			{
@@ -762,10 +882,61 @@ namespace BotTraderCore
 			saveTime = DateTime.Now + timeSpan;
 		}
 
-		public void AddBuySignal(DataPoint dataPoint)
+		public void AddBuySignal(DataPointsSnapshot snapshot)
 		{
+			bool addBuySignalStats = false;
 			lock (dataLock)
-				BuySignals.Add(dataPoint);
+			{
+				addBuySignalStats = BuySignals.Count == 0;
+				BuySignals.Add(snapshot.LastDataPoint);
+			}
+
+			Debugger.Log(0, "Debug", $"Buy Signal for {SymbolPair} at {DateTime.Now}.\n");
+
+			if (addBuySignalStats)
+			{
+				AveragePriceAtBuySignal = snapshot.GetAveragePriceExceptLastTwo();
+				StandardDeviationAtBuySignal = snapshot.GetStandardDeviationExceptLastTwo();
+				Debugger.Log(0, "Debug", $"  Average price up to now: {PriceConverter.GetUsdStr(AveragePriceAtBuySignal, SymbolPair)}\n");
+				Debugger.Log(0, "Debug", $"  Standard deviation: {PriceConverter.GetUsdStr(AveragePriceAtBuySignal, SymbolPair)}\n");
+				Debugger.Log(0, "Debug", $"  Price (USD): {PriceConverter.GetUsdStr(snapshot.LastDataPoint.Tick.LastTradePrice, SymbolPair)}\n");
+				Debugger.Log(0, "Debug", $"  Volume (USD): {PriceConverter.GetUsdStr(snapshot.LastDataPoint.Tick.QuoteVolume, SymbolPair)}\n\n");
+			}
+		}
+
+		public void GetFirstLastLowHigh(out DataPoint first, out DataPoint last, out DataPoint low, out DataPoint high, DateTime start, DateTime end)
+		{
+			List<DataPoint> pointsInRange;
+
+			lock (dataLock)
+				pointsInRange = StockDataPoints.Where(x => x.Time >= start && x.Time <= end).ToList();
+
+			TradeHistoryHelper.GetFirstLastLowHigh(pointsInRange, out first, out last, out low, out high);
+		}
+
+		public DataPointsSnapshot GetTruncatedSnapshot(DateTime start, DateTime end)
+		{
+			return TradeHistoryHelper.GetTruncatedSnapshot(this, start, end);
+		}
+
+		public void SaveNow()
+		{
+			if (!needToSaveData)
+				return;
+
+			DataPointsSnapshot snapshot = GetSnapshot();
+			int minutesSinceBuy = 99;
+			string snapshotJson = JsonConvert.SerializeObject(snapshot);
+			if (snapshot.BuySignals != null && snapshot.BuySignals.Count > 0)
+			{
+				TimeSpan spanSinceBuy = DateTime.Now - snapshot.BuySignals[0].Time;
+				minutesSinceBuy = (int)Math.Floor(spanSinceBuy.TotalMinutes);
+			}
+
+			saveFileName = saveFileName.Replace("$minutesPast$", minutesSinceBuy.ToString());
+
+			File.WriteAllText(saveFileName, snapshotJson);
+			needToSaveData = false;
 		}
 	}
 }

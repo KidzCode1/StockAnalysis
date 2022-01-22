@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Windows;
+using System.Diagnostics;
 using System.Globalization;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -55,6 +56,7 @@ namespace TickGraphCore
 		const double INT_BuySignalDiameter = INT_DotDiameter * 3;
 		const double INT_BuySignalRadius = INT_BuySignalDiameter / 2;
 		const double INT_BuySignalThickness = 2;
+		const double INT_AveragePriceThickness = 2;
 		const int INT_MinDataDensity = 8;
 		const int INT_MaxDataDensity = 150;
 
@@ -76,6 +78,8 @@ namespace TickGraphCore
 		{
 			MaxDataDensity = INT_MaxDataDensity;
 			InitializeComponent();
+			tbSymbolTitle.Text = "";
+			tbVolumeAtBuySignal.Text = "";
 			HookEvents();
 		}
 
@@ -110,11 +114,22 @@ namespace TickGraphCore
 		public void Clear()
 		{
 			cvsMain.Children.Clear();
+			cvsBackLayer.Children.Clear();
 		}
 
 		public void AddElement(FrameworkElement element)
 		{
 			cvsMain.Children.Add(element);
+		}
+
+		public void AddBackLayerElement(FrameworkElement element)
+		{
+			cvsBackLayer.Children.Add(element);
+		}
+
+		public void InsertBackLayerElement(FrameworkElement element)
+		{
+			cvsBackLayer.Children.Add(element);
 		}
 
 		public void InsertElement(FrameworkElement element)
@@ -185,22 +200,43 @@ namespace TickGraphCore
 			cvsHints.Visibility = Visibility.Visible;
 		}
 
-		string GetUSD(decimal lastTradePrice, int decimals = 9)
+		string GetSmartUSD(decimal amount, int decimals = 9)
 		{
-			return (TradeHistory.QuoteCurrencyToUsdConversion * lastTradePrice).GetNum(decimals);
+			decimal adjustedAmount = TradeHistory.QuoteCurrencyToUsdConversion * amount;
+			return "$" + GetAmountStr(adjustedAmount, decimals);
+		}
+
+		private static string GetAmountStr(decimal adjustedAmount, int decimals = 9)
+		{
+			if (adjustedAmount >= 1000)
+				decimals = 0;
+			else if (adjustedAmount >= 10)
+				decimals = 2;
+			else if (adjustedAmount >= 1)
+				decimals = 3;
+			else if (adjustedAmount >= 0.1m)
+				decimals = 4;
+			else if (adjustedAmount >= 0.01m)
+				decimals = 5;
+			else if (adjustedAmount >= 0.001m)
+				decimals = 6;
+			else if (adjustedAmount >= 0.0001m)
+				decimals = 7;
+
+			return adjustedAmount.GetNum(decimals);
 		}
 
 		public void ShowHintData(double x, double y, DataPoint nearestPoint)
 		{
 			CustomTick tick = nearestPoint.Tick;
 
-			tbTradePrice.Text = $"${GetUSD(tick.LastTradePrice)}";
+			tbTradePrice.Text = $"{GetSmartUSD(tick.LastTradePrice)}";
 			if (tick.QuoteVolume == 0)
 				tbTradeVolume.Text = "(not available)";
 			else
-				tbTradeVolume.Text = $"${GetUSD(tick.QuoteVolume, 0)}";
-			tbHighestBid.Text = $"${GetUSD(tick.HighestBidPrice)}";
-			tbLowestAsk.Text = $"${GetUSD(tick.LowestAskPrice)}";
+				tbTradeVolume.Text = $"{GetSmartUSD(tick.QuoteVolume, 0)}";
+			tbHighestBid.Text = $"{GetSmartUSD(tick.HighestBidPrice)}";
+			tbLowestAsk.Text = $"{GetSmartUSD(tick.LowestAskPrice)}";
 
 			tbDate.Text = $"{nearestPoint.Time:yyy MMM dd}";
 
@@ -253,7 +289,7 @@ namespace TickGraphCore
 
 		private void AddDot(double lastY, double x, double y, DataPoint stockDataPoint)
 		{
-			Ellipse dot = new Ellipse() { Fill = GetFillBrush(lastY, y, 128), Width = INT_DotDiameter, Height = INT_DotDiameter };
+			Ellipse dot = new Ellipse() { Fill = GetFillBrush(lastY, y, 128), Opacity = 0.5, Width = INT_DotDiameter, Height = INT_DotDiameter };
 			Canvas.SetLeft(dot, x - INT_DotRadius);
 			Canvas.SetTop(dot, y - INT_DotRadius);
 			AddElement(dot);
@@ -283,6 +319,15 @@ namespace TickGraphCore
 			Line line = CreateLine(lastX, lastY, x, y);
 			line.Stroke = GetFillBrush(lastY, y, 255);
 			InsertElement(line);  // All lines go to the back.
+		}
+
+		void DrawHorizontalLine(decimal amount, SolidColorBrush brush, double opacity)
+		{
+			double y = GetStockPositionY(amount);
+			Line line = CreateLine(0, y, chartWidthPixels, y);
+			line.Stroke = brush;
+			line.Opacity = opacity;
+			AddBackLayerElement(line);
 		}
 
 		private static Line CreateLine(double lastX, double lastY, double x, double y, double lineThickness = 1)
@@ -451,8 +496,8 @@ namespace TickGraphCore
 
 		private Point GetAdornmentPoint(CustomAdornment customAdornment)
 		{
-			double x = chartTranslator.GetStockPositionX(customAdornment.Time, chartWidthPixels);
-			double y = chartTranslator.GetStockPositionY(customAdornment.Price, chartHeightPixels);
+			double x = GetStockPositionX(customAdornment.Time);
+			double y = GetStockPositionY(customAdornment.Price);
 			Point adornmentPoint = new Point(x, y);
 			return adornmentPoint;
 		}
@@ -497,6 +542,11 @@ namespace TickGraphCore
 			return iconTimePoint;
 		}
 
+		/// <summary>
+		/// Set in calls to DrawGraph
+		/// </summary>
+		decimal averagePrice;
+
 		public void DrawGraph(List<CustomAdornment> customAdornments = null)
 		{
 			lastCustomAdornments = customAdornments;
@@ -512,39 +562,102 @@ namespace TickGraphCore
 
 			List<DataPoint> buySignals;
 
+			decimal standardDeviation;
+			ITradeHistory tradeHistory;
 			if (dataDensity > INT_MinDataDensity - 3)
 			{
 				if (denseDataPoints == null || (chartTranslator.TradeHistory as IUpdatableTradeHistory)?.ChangedSinceLastDataDensityQuery == true)
 					denseDataPoints = chartTranslator.TradeHistory.GetDataPointsAcrossSegments(dataDensity, UseChangeSummaries);
 
 				DrawDataPoints(denseDataPoints);
-				buySignals = chartTranslator.TradeHistory.BuySignals.ToList();
+				tradeHistory = chartTranslator.TradeHistory;
 			}
 			else
 			{
 				DataPointsSnapshot stockDataPointSnapshot = chartTranslator.TradeHistory.GetSnapshot();
 				DrawDataPoints(stockDataPointSnapshot.DataPoints);
-				
-				buySignals = stockDataPointSnapshot.BuySignals;
+
+				tradeHistory = stockDataPointSnapshot;
 			}
+
+			buySignals = tradeHistory.BuySignals.ToList();
+			averagePrice = tradeHistory.AveragePriceAtBuySignal;
+			if (averagePrice == 0)
+				averagePrice = tradeHistory.AveragePrice;
+
+			standardDeviation = tradeHistory.StandardDeviationAtBuySignal;
+
+			if (buySignals != null && buySignals.Count > 0)
+				DrawBuySignals(buySignals);
 
 			
-			if (buySignals != null && buySignals.Count > 0)
-			{
-				DrawBuySignals(buySignals);
-			}
 
+			if (standardDeviation == 0)
+				standardDeviation = tradeHistory.StandardDeviation;
+
+			DrawAveragePrice(tradeHistory, averagePrice, standardDeviation);
+
+			DrawHorizontalLine(averagePrice * 1.03m, Brushes.DarkRed, 0.6);
+			DrawHorizontalLine(averagePrice * 1.04m, Brushes.Green, 0.6);
+			DrawHorizontalLine(averagePrice * 1.05m, Brushes.Blue, 0.15);
+			DrawHorizontalLine(averagePrice * 1.06m, Brushes.Blue, 0.15);
+			DrawHorizontalLine(averagePrice * 1.07m, Brushes.Blue, 0.15);
 
 			AddCoreAdornments(lastMousePosition);
-
-			// TODO: if the mouse is down...
-			//if (mouseIsDown (Selection is active))
-			//Selection.Cursor = chartTranslator.GetTimeFromX(lastMousePosition.X);
-			//Selection.Changing();
 
 			UpdateSelection();
 			DrawAnalysisCharts();
 			DrawCustomAdornments(customAdornments);
+		}
+
+		void DrawAveragePrice(ITradeHistory tradeHistory, decimal averagePrice, decimal standardDeviation)
+		{
+			double left = GetStockPositionX(tradeHistory.Start);
+			double right = GetStockPositionX(tradeHistory.End /* buySignal.Time */);
+			double width = right - left;
+			double averageY = GetStockPositionY(averagePrice);
+			double plusOneStandardDeviation = GetStockPositionY(averagePrice + standardDeviation);
+			double standardDeviationHeight = Math.Abs(plusOneStandardDeviation - averageY);
+			AddStandardDeviationRectangle(left, width, averageY, standardDeviationHeight * 3, 0.05);
+			AddStandardDeviationRectangle(left, width, averageY, standardDeviationHeight * 2);
+			AddStandardDeviationRectangle(left, width, averageY, standardDeviationHeight);
+			AddStandardDeviationRectangle(left, width, averageY, 2);
+			DrawHorizontalLine(averagePrice + 3 * standardDeviation, Brushes.Orange, 0.5);
+		}
+
+		void AddStandardDeviationRectangle(double left, double width, double top, double halfHeight, double opacityOverride = 0.2)
+		{
+			double y = top - halfHeight;
+			double height = halfHeight * 2;
+			if (y < 0)
+			{
+				height += y;
+				y = 0;
+			}
+
+			if (y + height > chartHeightPixels)
+				height = chartHeightPixels - y;
+
+			if (height < 0)
+				return;
+
+			Rectangle averagePrice = new Rectangle() { Width = width, Height = height, Fill = Brushes.Yellow, Stroke = Brushes.Orange, Opacity = opacityOverride, StrokeThickness = INT_AveragePriceThickness };
+			averagePrice.IsHitTestVisible = false;
+			cvsBackLayer.IsHitTestVisible = false;
+
+			Canvas.SetLeft(averagePrice, left);
+			Canvas.SetTop(averagePrice, y);
+			AddBackLayerElement(averagePrice);
+		}
+
+		private double GetStockPositionX(DateTime time)
+		{
+			return chartTranslator.GetStockPositionX(time, chartWidthPixels);
+		}
+
+		private double GetStockPositionY(decimal price)
+		{
+			return chartTranslator.GetStockPositionY(price, chartHeightPixels);
 		}
 
 		void DrawBuySignals(List<DataPoint> buySignals)
@@ -553,10 +666,9 @@ namespace TickGraphCore
 				return;
 
 			DataPoint dataPoint = buySignals.FirstOrDefault();
-			if (dataPoint != null)
-			{
-				double x = chartTranslator.GetStockPositionX(dataPoint.Time, chartWidthPixels);
-				double y = chartTranslator.GetStockPositionY(dataPoint.Tick.LastTradePrice, chartHeightPixels);
+			if (dataPoint != null)	{
+				double x = GetStockPositionX(dataPoint.Time);
+				double y = GetStockPositionY(dataPoint.Tick.LastTradePrice);
 				AddBuySignal(x, y, dataPoint);
 			}
 		}
@@ -571,8 +683,8 @@ namespace TickGraphCore
 			double lastY = double.MinValue;
 			foreach (DataPoint stockDataPoint in stockDataPoints)
 			{
-				double x = chartTranslator.GetStockPositionX(stockDataPoint.Time, chartWidthPixels);
-				double y = chartTranslator.GetStockPositionY(stockDataPoint.Tick.LastTradePrice, chartHeightPixels);
+				double x = GetStockPositionX(stockDataPoint.Time);
+				double y = GetStockPositionY(stockDataPoint.Tick.LastTradePrice);
 				AddDot(lastY, x, y, stockDataPoint);
 
 				if (alreadyDrawnAtLeastOnePoint)
@@ -601,8 +713,8 @@ namespace TickGraphCore
 			Canvas.SetTop(selectionRect, 0);
 			selectionRect.Height = cvsSelection.ActualHeight;
 
-			double leftSide = chartTranslator.GetStockPositionX(Selection.Start, chartWidthPixels);  // 750
-			double rightSide = chartTranslator.GetStockPositionX(Selection.End, chartWidthPixels);   // 1100
+			double leftSide = GetStockPositionX(Selection.Start);  // 750
+			double rightSide = GetStockPositionX(Selection.End);   // 1100
 
 			Canvas.SetLeft(selectionRect, leftSide);
 
@@ -637,6 +749,9 @@ namespace TickGraphCore
 			lastMousePosition = e.GetPosition(cvsCoreAdornments);
 			AddCoreAdornments(lastMousePosition);
 			UpdateSelectionIfNeeded(e);
+
+			if (Selection.Exists && Selection.Mode == SelectionModes.DraggingToSelect)
+				tbStatus.Text = $"{GetSpanStr(Selection.Span)} selected";
 		}
 
 		void UpdateSelectionIfNeeded(MouseEventArgs e)
@@ -695,22 +810,29 @@ namespace TickGraphCore
 		void AddPriceMarkers()
 		{
 			const double fontSize = 14;
-			const int leftMargin = -80;
-			const int leftItemWidth = -leftMargin - 10;
-			TextBlock txLow = new TextBlock() { Text = $"${GetUSD(chartTranslator.TradeHistory.Low)}", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
-			TextBlock txHigh = new TextBlock() { Text = $"${GetUSD(chartTranslator.TradeHistory.High)}", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
+			const int leftMargin = 80;
+			const int highLowPriceMargin = 60;
+			const int leftItemWidth = leftMargin - 10;
+			TextBlock txLow = new TextBlock() { Text = $"{GetSmartUSD(chartTranslator.TradeHistory.Low)}", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
+			TextBlock txHigh = new TextBlock() { Text = $"{GetSmartUSD(chartTranslator.TradeHistory.High)}", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize };
 
-			AddCoreAdornment(txHigh, leftMargin, -fontSize);
-			AddCoreAdornment(txLow, leftMargin, chartHeightPixels - fontSize);
+			while (MeasureString(txLow).Width > highLowPriceMargin)
+				txLow.FontSize *= 0.9;
+
+			while (MeasureString(txHigh).Width > highLowPriceMargin)
+				txHigh.FontSize *= 0.9;
+
+			AddCoreAdornment(txHigh, -leftMargin, -fontSize);
+			AddCoreAdornment(txLow, -leftMargin, chartHeightPixels - fontSize);
 
 
-			string amountInView = GetUSD(chartTranslator.TradeHistory.ValueSpan, 2);
+			string amountInView = GetSmartUSD(chartTranslator.TradeHistory.ValueSpan, 2);
 			decimal percentInView = chartTranslator.TradeHistory.PercentInView;
 			TextBlock txPercentInView = new TextBlock() { Text = $"{Math.Round(percentInView, 2)}%", Width = leftItemWidth, TextAlignment = TextAlignment.Right, VerticalAlignment = VerticalAlignment.Center, FontSize = fontSize * 1.2 };
 			double amountFontSize = fontSize * 0.9;
-			TextBlock txAmountInView = new TextBlock() { Text = $"(${amountInView})", Width = leftItemWidth, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontSize = amountFontSize };
-			AddCoreAdornment(txPercentInView, leftMargin + 5, chartHeightPixels / 2.0 - fontSize * 1.5 - amountFontSize / 2);
-			AddCoreAdornment(txAmountInView, leftMargin + 20, chartHeightPixels / 2.0 - amountFontSize / 4);
+			TextBlock txAmountInView = new TextBlock() { Text = $"({amountInView})", Width = leftItemWidth, TextAlignment = TextAlignment.Center, VerticalAlignment = VerticalAlignment.Center, FontSize = amountFontSize };
+			AddCoreAdornment(txPercentInView, -leftMargin + 5, chartHeightPixels / 2.0 - fontSize * 1.5 - amountFontSize / 2);
+			AddCoreAdornment(txAmountInView, -leftMargin + 20, chartHeightPixels / 2.0 - amountFontSize / 4);
 		}
 
 		private void AddCoreAdornment(FrameworkElement element, int left, double top)
@@ -731,7 +853,7 @@ namespace TickGraphCore
 			AddVerticalTimeLine(position);
 			AddHorizontalPriceLine(position);
 
-			if (mouseIsInsideGraph)
+			if (mouseIsInsideGraph && Selection.Mode != SelectionModes.DraggingToSelect)
 				AddPriceHint(position);
 		}
 
@@ -768,6 +890,7 @@ namespace TickGraphCore
 			if (Selection.IsInBounds(position.X, position.Y))
 			{
 				Selection.Mode = SelectionModes.DraggingToSelect;
+				HideDataPointHint();
 				Selection.Anchor = chartTranslator.GetTime(position.X, chartWidthPixels);
 				cvsSelection.CaptureMouse();
 			}
@@ -789,6 +912,30 @@ namespace TickGraphCore
 			Selection.OnChanging += Selection_OnChanging;
 		}
 
+		string GetSpanStr(TimeSpan timeSpan)
+		{
+			if (timeSpan.TotalHours >= 1)
+				if (timeSpan.Hours == 1)
+					return $"1 hr {timeSpan.Minutes} min";
+				else if (timeSpan.Minutes == 0)
+					return $"{timeSpan.Hours} hrs";
+				else
+					return $"{timeSpan.Hours} hrs {timeSpan.Minutes} min";
+
+			if (timeSpan.TotalMinutes >= 1)
+				if (timeSpan.Minutes == 1)
+					return $"1 min {timeSpan.Seconds} sec";
+				else if (timeSpan.Seconds == 0)
+					return $"{timeSpan.Minutes} min";
+				else
+					return $"{timeSpan.Minutes} min {timeSpan.Seconds} sec";
+
+			if (timeSpan.Milliseconds == 0)
+				return $"{timeSpan.Seconds} sec";
+
+			return $"{timeSpan.Seconds} sec {timeSpan.Milliseconds} ms";
+		}
+
 		public void HandleMouseUp(MouseButtonEventArgs e)
 		{
 			if (chartTranslator == null)
@@ -799,6 +946,8 @@ namespace TickGraphCore
 				cvsSelection.ReleaseMouseCapture();
 				Point position = e.GetPosition(cvsSelection);
 				Selection.SetFinalCursor(chartTranslator.GetTime(position.X, chartWidthPixels));
+
+				UpdateStatusText();
 			}
 		}
 
@@ -828,14 +977,16 @@ namespace TickGraphCore
 			double horizontalMargin = grdContainer.Margin.Left + grdContainer.Margin.Right;
 			double verticalMargin = grdContainer.Margin.Top + grdContainer.Margin.Bottom;
 
-			Canvas.SetTop(vbUpDownArrows, e.NewSize.Height / 2 - 125);
+			Canvas.SetTop(vbUpDownArrows, e.NewSize.Height / 2 - 95);
 
 			chartWidthPixels = e.NewSize.Width - horizontalMargin - 60;
-			chartHeightPixels = e.NewSize.Height - verticalMargin - 100;
-
+			chartHeightPixels = e.NewSize.Height - verticalMargin - 10;
+			
 			SetSize(cvsBackground);
 			SetSize(rctBackground);
 			SetSize(cvsMain);
+			SetSize(cvsBackLayer);
+			SetSize(cvsTitleLayer);
 			SetSize(cvsAllHints);
 			SetSize(cvsCoreAdornments);
 			SetSize(cvsCustomAdornments);
@@ -882,12 +1033,17 @@ namespace TickGraphCore
 		private void CvsBackground_MouseLeave(object sender, MouseEventArgs e)
 		{
 			mouseIsInsideGraph = false;
+			HideDataPointHint();
+			RefreshGraph();
+		}
+
+		private void HideDataPointHint()
+		{
 			vbHintLL.Visibility = Visibility.Hidden;
 			vbHintLR.Visibility = Visibility.Hidden;
 			vbHintUR.Visibility = Visibility.Hidden;
 			vbHintUL.Visibility = Visibility.Hidden;
 			grdStockTickDetails.Visibility = Visibility.Hidden;
-			RefreshGraph();
 		}
 
 		void RefreshGraph()
@@ -917,8 +1073,97 @@ namespace TickGraphCore
 			if (chartTranslator == null)
 				return;
 			chartTranslator.TradeHistory = tradeHistory;
+			if (tradeHistory != null)
+			{
+				tbSymbolTitle.Text = tradeHistory.SymbolPair;
+				if (tradeHistory.BuySignals != null && tradeHistory.BuySignals.Count > 0)
+				{
+					
+					decimal quoteVolumeUsd = PriceConverter.GetPriceUsd(tradeHistory.SymbolPair) * tradeHistory.BuySignals[0].Tick.QuoteVolume;
+					if (quoteVolumeUsd <= 0)
+						tbVolumeAtBuySignal.Text = "(volume not available!)";
+					else
+						tbVolumeAtBuySignal.Text = $"(volume at buy signal: ${GetAmountStr(quoteVolumeUsd)})";
+
+					if (quoteVolumeUsd < 1000)
+					{
+						tbVolumeAtBuySignal.Foreground = Brushes.DarkRed;
+						tbVolumeAtBuySignal.FontWeight = FontWeights.Bold;
+					}
+					else
+					{
+						tbVolumeAtBuySignal.Foreground = Brushes.SteelBlue;
+						tbVolumeAtBuySignal.FontWeight = FontWeights.Regular;
+					}
+				}
+				else
+				{
+					tbVolumeAtBuySignal.Text = "";
+					//tbVolumeAtBuySignal.Text = $"(volume: {tradeHistory.AverageVolume})";
+				}
+			}
+			else
+			{
+				tbSymbolTitle.Text = "";
+			}
+
 			ClearDataDensityPoints();
 			DrawGraph();
+		}
+
+		void UpdateStatusText()
+		{
+			if (!Selection.Exists)
+			{
+				tbStatus.Text = "";
+				return;
+			}
+
+			chartTranslator.TradeHistory.GetFirstLastLowHigh(out DataPoint first, out DataPoint last, out DataPoint low, out DataPoint high, Selection.Start, Selection.End);
+
+			string selectionStr = $"{GetSpanStr(Selection.Span)} selected";
+			if (low == null || high == null)
+				tbStatus.Text = selectionStr;
+			else
+			{
+				decimal priceSpan = high.Tick.LastTradePrice - low.Tick.LastTradePrice;
+				string priceSpanUsd = GetSmartUSD(priceSpan);
+				string climbFallStr;
+				decimal delta = last.Tick.LastTradePrice - first.Tick.LastTradePrice;
+				if (delta > 0)
+					climbFallStr = $"Climbs {GetSmartUSD(delta)} ({GetAmountStr(100 * delta / averagePrice)}%)";
+				else if (delta < 0)
+					climbFallStr = $"Falls {GetSmartUSD(-delta)} ({GetAmountStr(100 * -delta / averagePrice)}%)";
+				else
+					climbFallStr = "No change";
+
+				tbStatus.Text = $"{selectionStr}, Low to High: {priceSpanUsd}, {climbFallStr}";
+			}
+		}
+
+		private void ZoomMenuItem_Click(object sender, RoutedEventArgs e)
+		{
+			FrmZoom frmZoom = new FrmZoom();
+			
+			DateTime end;
+			DateTime start;
+			
+			if (Selection.Exists)
+			{
+				end = Selection.End;
+				start = Selection.Start;
+			}
+			else
+			{
+				TimeSpan spanAcross = chartTranslator.TradeHistory.SpanAcross;
+				TimeSpan zoomHalf = TimeSpan.FromSeconds(spanAcross.TotalSeconds / 8.0);
+				start = Selection.Cursor - zoomHalf;
+				end = Selection.Cursor + zoomHalf;
+			}
+
+			DataPointsSnapshot snapshot = chartTranslator.TradeHistory.GetTruncatedSnapshot(start, end);
+			frmZoom.SetTradeHistory(snapshot);
+			frmZoom.ShowDialog();
 		}
 	}
 }

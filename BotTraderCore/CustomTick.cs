@@ -90,6 +90,8 @@ namespace BotTraderCore
 				return false;
 			if (Symbol != obj.Symbol)
 				return false;
+			if (QuoteVolume != obj.QuoteVolume)
+				return false;
 
 			return true;
 		}

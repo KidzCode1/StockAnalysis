@@ -5,6 +5,7 @@ using System.Collections.ObjectModel;
 using System.Diagnostics;
 using Newtonsoft.Json;
 using System.IO;
+using System.Collections;
 
 namespace BotTraderCore
 {
@@ -23,8 +24,11 @@ namespace BotTraderCore
 
 		decimal quoteCurrencyToUsdConversion = 1;
 
-		public DataPointsSnapshot(List<DataPoint> dataPoints, DateTime start, DateTime end, decimal low, decimal high, List<ChangeSummary> changeSummaries, ChangeSummary activeChangeSummary, List<DataPoint> buySignals, string symbolPair, decimal quoteCurrencyToUsdConversion)
+		public DataPointsSnapshot(List<DataPoint> dataPoints, DateTime start, DateTime end, decimal low, decimal high, List<ChangeSummary> changeSummaries, ChangeSummary activeChangeSummary, List<DataPoint> buySignals, string symbolPair, decimal quoteCurrencyToUsdConversion, decimal averagePriceAtBuySignal, decimal standardDeviationAtBuySignal)
 		{
+			StandardDeviationAtBuySignal = standardDeviationAtBuySignal;
+			AveragePriceAtBuySignal = averagePriceAtBuySignal;
+
 			SymbolPair = symbolPair;
 
 			if (quoteCurrencyToUsdConversion == 0)
@@ -52,7 +56,13 @@ namespace BotTraderCore
 				thirdToLastDataPoint = dataPointsList[dataPointsList.Count - 3];
 
 			this.dataPoints = new ReadOnlyCollection<DataPoint>(dataPointsList);
-			List<ChangeSummary> localChangeSummaries = changeSummaries.ToList();
+
+			List<ChangeSummary> localChangeSummaries;
+			if (changeSummaries == null)
+				localChangeSummaries = new List<ChangeSummary>();
+			else
+				localChangeSummaries = changeSummaries.ToList();
+
 			if (activeChangeSummary != null)
 				localChangeSummaries.Add(activeChangeSummary);
 			this.changeSummaries = new ReadOnlyCollection<ChangeSummary>(localChangeSummaries);
@@ -74,6 +84,8 @@ namespace BotTraderCore
 
 		public decimal AveragePrice => GetAveragePrice();
 
+		public decimal StandardDeviation => GetStandardDeviation();
+
 		public int DataPointCount => DataPoints.Count;
 
 		public decimal PercentInView => ValueSpan / High * 100;
@@ -87,6 +99,8 @@ namespace BotTraderCore
 		public decimal ValueSpan => High - Low;
 
 		public string SymbolPair { get; set; }
+		public decimal AveragePriceAtBuySignal { get; set; }
+		public decimal StandardDeviationAtBuySignal { get; set; }
 
 		decimal average = decimal.MinValue;
 		decimal averageMinusTwo = decimal.MinValue;
@@ -143,6 +157,8 @@ namespace BotTraderCore
 					break;
 				index++;
 			}
+			if (count == 0)
+				return 0;
 			return sum / count;
 		}
 
@@ -171,6 +187,8 @@ namespace BotTraderCore
 					break;
 				index++;
 			}
+			if (count == 0)
+				return 0m;
 			decimal variance = sum / count;
 			return (decimal)Math.Sqrt((double)variance);
 		}
@@ -292,7 +310,7 @@ namespace BotTraderCore
 		}
 
 		/// <summary>
-		/// Returns a single point that represents the specified range (an average of all data points in that space, or  the
+		/// Returns a single point that represents the specified range (an average of all data points in that space, or the
 		/// previous point's value if there are no points in the range).
 		/// </summary>
 		/// <param name="startSegment"></param>
@@ -313,6 +331,7 @@ namespace BotTraderCore
 
 			decimal totalLastTradePrice = 0;
 			decimal totalHighestBidPrice = 0;
+			decimal totalQuoteVolume = 0;
 			decimal totalLowestAskPrice = 0;
 			decimal totalDurationSeconds = 0;
 			int index = startIndex;
@@ -352,6 +371,7 @@ namespace BotTraderCore
 				// For calculating average value...
 				totalLastTradePrice += durationSeconds * tick.LastTradePrice;
 				totalHighestBidPrice += durationSeconds * tick.HighestBidPrice;
+				totalQuoteVolume += durationSeconds * tick.QuoteVolume;
 				totalLowestAskPrice += durationSeconds * tick.LowestAskPrice;
 			}
 
@@ -360,13 +380,15 @@ namespace BotTraderCore
 
 			decimal lastTradePrice = totalLastTradePrice / totalDurationSeconds;
 			decimal highestBidPrice = totalHighestBidPrice / totalDurationSeconds;
+			decimal quoteVolume = totalQuoteVolume / totalDurationSeconds;
 			decimal lowestAskPrice = totalLowestAskPrice / totalDurationSeconds;
 			return new DataPoint(
 								new CustomTick()
 								{
 									LastTradePrice = lastTradePrice,
 									HighestBidPrice = highestBidPrice,
-									LowestAskPrice = lowestAskPrice
+									LowestAskPrice = lowestAskPrice,
+									QuoteVolume = quoteVolume
 								})
 			{
 				Time = startSegment
@@ -461,7 +483,32 @@ namespace BotTraderCore
 
 		public void GetPriceConversion()
 		{
-			quoteCurrencyToUsdConversion = PriceConverter.GetPriceUsd(SymbolPair);
+			if (string.IsNullOrWhiteSpace(SymbolPair))
+				quoteCurrencyToUsdConversion = 1;
+			else
+				quoteCurrencyToUsdConversion = PriceConverter.GetPriceUsd(SymbolPair);
+		}
+
+		public void Loaded()
+		{
+			if (BuySignals.Count == 0)
+				return;
+			if (StandardDeviationAtBuySignal != 0 && AveragePriceAtBuySignal != 0)
+				return;
+			int numEndPointsToExclude = DataPoints.Where(x => x.Time >= BuySignals[0].Time).Count() + 2;
+			StandardDeviationAtBuySignal = CalculateStandardDeviation(numEndPointsToExclude);
+			AveragePriceAtBuySignal = CalculateAveragePrice(numEndPointsToExclude);
+		}
+
+		public void GetFirstLastLowHigh(out DataPoint first, out DataPoint last, out DataPoint low, out DataPoint high, DateTime start, DateTime end)
+		{
+			List<DataPoint> pointsInRange = TradeHistoryHelper.GetPointsInRange(StockDataPoints, start, end);
+			TradeHistoryHelper.GetFirstLastLowHigh(pointsInRange, out first, out last, out low, out high);
+		}
+
+		public DataPointsSnapshot GetTruncatedSnapshot(DateTime start, DateTime end)
+		{
+			return TradeHistoryHelper.GetTruncatedSnapshot(this, start, end);
 		}
 	}
 }

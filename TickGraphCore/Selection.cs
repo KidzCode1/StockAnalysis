@@ -15,6 +15,10 @@ namespace TickGraphCore
 		{
 			OnChanging?.Invoke(sender, e);
 		}
+
+		public TimeSpan Span => End - Start;
+
+
 		public DateTime Start
 		{
 			get
