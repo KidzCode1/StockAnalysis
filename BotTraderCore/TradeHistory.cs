@@ -190,6 +190,12 @@ namespace BotTraderCore
 		/// </summary>
 		public List<DataPoint> BuySignals { get; set; } = new List<DataPoint>();
 
+
+		/// <summary>
+		/// DataPoints representing sell signals for this trade history.
+		/// </summary>
+		public List<DataPoint> SellSignals { get; set; } = new List<DataPoint>();
+
 		/// <summary>
 		/// The average price at the time the first buy signal arrived.
 		/// </summary>
@@ -277,6 +283,11 @@ namespace BotTraderCore
 			return BuySignals != null && BuySignals.Count > 0;
 		}
 
+		private bool HasSellSignal()
+		{
+			return SellSignals != null && SellSignals.Count > 0;
+		}
+
 		public DataPoint AddStockPosition(CustomTick data, DateTime? timeOverride = null)
 		{
 			BeginUpdate();
@@ -298,7 +309,7 @@ namespace BotTraderCore
 
 			bool removedOldDataPoints = RemoveAgingDataPoints();
 
-			if (NewMethod())
+			if (HasExcessDataPoints())
 				RemoveExcessDataPoints(stockDataPoint);
 			else if (!removedOldDataPoints)
 				if (StockDataPoints.Count < 10)
@@ -311,19 +322,14 @@ namespace BotTraderCore
 			EndUpdate();
 
 			if (needToSaveData && saveTime < DateTime.Now)
-			{
-				needToSaveData = false;
-
-				string snapshot = JsonConvert.SerializeObject(GetSnapshot());
-				File.WriteAllText(saveFileName, snapshot);
-			}
+				SaveNow();
 
 			DataPointAdded?.Invoke(this, this);
 
 			return stockDataPoint;
 		}
 
-		private bool NewMethod()
+		private bool HasExcessDataPoints()
 		{
 			return (StockDataPoints.Count > MaxDataPointsToKeep && !HasBuySignal()) || StockDataPoints.Count > MaxDataPointsToKeepWithBuySignal;
 		}
@@ -712,6 +718,9 @@ namespace BotTraderCore
 					BuySignals,
 					SymbolPair,
 					QuoteCurrencyToUsdConversion, AveragePriceAtBuySignal, StandardDeviationAtBuySignal);
+			
+			if (SellSignals != null && SellSignals.Count > 0)
+				lastSnapShot.SellSignals = new List<DataPoint>(SellSignals);
 
 			changedSinceLastSnapshot = false;
 
@@ -937,6 +946,8 @@ namespace BotTraderCore
 
 			File.WriteAllText(saveFileName, snapshotJson);
 			needToSaveData = false;
+
+			BuySignals.Clear();
 		}
 	}
 }

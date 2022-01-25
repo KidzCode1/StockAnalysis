@@ -18,7 +18,8 @@ namespace BotTraderCore
 		decimal StandardDeviation { get; }
 
 		List<DataPoint> BuySignals { get; set; }
-		
+		List<DataPoint> SellSignals { get; set; }
+
 		/// <summary>
 		/// The average price at the time the first buy signal arrived.
 		/// </summary>

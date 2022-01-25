@@ -83,5 +83,11 @@ namespace TickGraphCore
 			Mode = SelectionModes.Normal;
 			Changed();
 		}
+
+		public void Collapse()
+		{
+			Cursor = Start;
+			Anchor = Start;
+		}
 	}
 }

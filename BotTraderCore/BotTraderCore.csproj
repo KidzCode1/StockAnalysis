@@ -34,7 +34,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="Binance.Net, Version=7.2.6.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\..\..\BotTrader\BotTrader\packages\Binance.Net.7.2.6\lib\netstandard2.0\Binance.Net.dll</HintPath>
+      <HintPath>..\..\..\..\BotTrader\BotTrader\packages\Binance.Net.7.2.7\lib\netstandard2.0\Binance.Net.dll</HintPath>
     </Reference>
     <Reference Include="Bittrex.Net, Version=6.1.5.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\..\..\BotTrader\BotTrader\packages\Bittrex.Net.6.1.5\lib\netstandard2.0\Bittrex.Net.dll</HintPath>
@@ -42,8 +42,8 @@
     <Reference Include="CryptoExchange.Net, Version=4.2.8.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\..\..\..\BotTrader\BotTrader\packages\CryptoExchange.Net.4.2.8\lib\netstandard2.0\CryptoExchange.Net.dll</HintPath>
     </Reference>
-    <Reference Include="Microsoft.AspNet.SignalR.Client, Version=2.4.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>..\..\..\..\BotTrader\BotTrader\packages\Microsoft.AspNet.SignalR.Client.2.4.2\lib\net45\Microsoft.AspNet.SignalR.Client.dll</HintPath>
+    <Reference Include="Microsoft.AspNet.SignalR.Client, Version=2.4.3.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\..\..\..\BotTrader\BotTrader\packages\Microsoft.AspNet.SignalR.Client.2.4.3\lib\net45\Microsoft.AspNet.SignalR.Client.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=6.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\..\..\..\BotTrader\BotTrader\packages\Microsoft.Extensions.Logging.Abstractions.6.0.0\lib\net461\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>

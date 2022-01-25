@@ -35,31 +35,31 @@ namespace BotTraderTests
 			string testSaveFile = UserDataFolders.GetTestFilePath("FivePointsTestSave.json");
 			if (File.Exists(testSaveFile))
 				File.Delete(testSaveFile);
-			List<StockDataPoint> loadedPoints = StockDataPoint.Load(fivePointsFile);
+			List<DataPoint> loadedPoints = DataPoint.Load(fivePointsFile);
 			Assert.AreEqual(5, loadedPoints.Count);
 
 			loadedPoints.Save(testSaveFile);
-			List<StockDataPoint> newLoadedPoints = StockDataPoint.Load(testSaveFile);
+			List<DataPoint> newLoadedPoints = DataPoint.Load(testSaveFile);
 			Assert.IsTrue(newLoadedPoints.Matches(loadedPoints));
 			loadedPoints[0].Time = DateTime.Now;
 			Assert.IsFalse(newLoadedPoints.Matches(loadedPoints));
-			newLoadedPoints = StockDataPoint.Load(testSaveFile);
+			newLoadedPoints = DataPoint.Load(testSaveFile);
 			newLoadedPoints[0].Weight++;
 			Assert.IsFalse(newLoadedPoints.Matches(loadedPoints));
 
-			newLoadedPoints = StockDataPoint.Load(testSaveFile);
+			newLoadedPoints = DataPoint.Load(testSaveFile);
 			newLoadedPoints[2].Tick.HighestBidPrice += 0.0000001m;
 			Assert.IsFalse(newLoadedPoints.Matches(loadedPoints));
 
-			newLoadedPoints = StockDataPoint.Load(testSaveFile);
+			newLoadedPoints = DataPoint.Load(testSaveFile);
 			newLoadedPoints[3].Tick.LastTradePrice += 0.0000001m;
 			Assert.IsFalse(newLoadedPoints.Matches(loadedPoints));
 
-			newLoadedPoints = StockDataPoint.Load(testSaveFile);
+			newLoadedPoints = DataPoint.Load(testSaveFile);
 			newLoadedPoints[4].Tick.LowestAskPrice += 0.0000001m;
 			Assert.IsFalse(newLoadedPoints.Matches(loadedPoints));
 
-			newLoadedPoints = StockDataPoint.Load(testSaveFile);
+			newLoadedPoints = DataPoint.Load(testSaveFile);
 			newLoadedPoints[1].Tick.Symbol += ".";
 			Assert.IsFalse(newLoadedPoints.Matches(loadedPoints));
 		}
@@ -71,11 +71,13 @@ namespace BotTraderTests
 		[TestMethod]
 		public void TestMethod1()
 		{
-			BittrexTick bittrexTick = new BittrexTick();
-			bittrexTick.AskRate = 10;
-			bittrexTick.BidRate = 11;
-			bittrexTick.LastTradeRate = 10.5m;
-			bittrexTick.Symbol = "BTC-USDT";
+			BittrexTick bittrexTick = new BittrexTick
+			{
+				AskRate = 10,
+				BidRate = 11,
+				LastTradeRate = 10.5m,
+				Symbol = "BTC-USDT"
+			};
 			CustomTick customTick = new CustomTick(bittrexTick);
 			Assert.AreEqual(10, customTick.LowestAskPrice);
 			Assert.AreEqual(11, customTick.HighestBidPrice);

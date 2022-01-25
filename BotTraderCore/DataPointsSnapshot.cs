@@ -82,6 +82,11 @@ namespace BotTraderCore
 		/// </summary>
 		public List<DataPoint> BuySignals { get; set; }
 
+		/// <summary>
+		/// DataPoints representing sell signals for this snapshot.
+		/// </summary>
+		public List<DataPoint> SellSignals { get; set; }
+
 		public decimal AveragePrice => GetAveragePrice();
 
 		public decimal StandardDeviation => GetStandardDeviation();

@@ -18,7 +18,6 @@ namespace TickGraphCore
 	/// </summary>
 	public partial class TickGraph : UserControl
 	{
-		
 		Color verticalTimeLineColor = Color.FromArgb(200, 115, 115, 115);
 		Color horizontalPriceLineColor = Color.FromArgb(200, 115, 115, 115);
 		public int MaxDataDensity { get; set; } = INT_MaxDataDensity;
@@ -278,13 +277,30 @@ namespace TickGraphCore
 			}
 		}
 
-		void AddBuySignal(double x, double y, DataPoint dataPoint)
+		void AddBuySignal(DataPoint signal)
 		{
-			Ellipse buySignal = new Ellipse() { Stroke = Brushes.Blue, Opacity = 0.4, Width = INT_BuySignalDiameter, Height = INT_BuySignalDiameter, StrokeThickness = INT_BuySignalThickness };
-			Canvas.SetLeft(buySignal, x - INT_BuySignalRadius);
-			Canvas.SetTop(buySignal, y - INT_BuySignalRadius);
-			AddElement(buySignal);
-			buySignal.Tag = dataPoint;
+			if (signal == null)
+				return;
+			AddSignal(signal, Brushes.Blue);
+		}
+
+		void AddSellSignal(DataPoint signal)
+		{
+			if (signal == null)
+				return;
+			AddSignal(signal, Brushes.Maroon);
+		}
+
+		private void AddSignal(DataPoint signal, Brush brush)
+		{
+			double x = GetStockPositionX(signal.Time);
+			double y = GetStockPositionY(signal.Tick.LastTradePrice);
+
+			Ellipse signalCircle = new Ellipse() { Stroke = brush, Opacity = 0.4, Width = INT_BuySignalDiameter, Height = INT_BuySignalDiameter, StrokeThickness = INT_BuySignalThickness };
+			Canvas.SetLeft(signalCircle, x - INT_BuySignalRadius);
+			Canvas.SetTop(signalCircle, y - INT_BuySignalRadius);
+			AddElement(signalCircle);
+			//signalCircle.Tag = signal;
 		}
 
 		private void AddDot(double lastY, double x, double y, DataPoint stockDataPoint)
@@ -325,6 +341,16 @@ namespace TickGraphCore
 		{
 			double y = GetStockPositionY(amount);
 			Line line = CreateLine(0, y, chartWidthPixels, y);
+			line.Stroke = brush;
+			line.Opacity = opacity;
+			AddBackLayerElement(line);
+		}
+
+		void DrawPercentLine(decimal amount, SolidColorBrush brush, double opacity)
+		{
+			const double overlapPx = 3;
+			double y = GetStockPositionY(amount);
+			Line line = CreateLine(0 - overlapPx, y, chartWidthPixels + 2 * overlapPx, y);
 			line.Stroke = brush;
 			line.Opacity = opacity;
 			AddBackLayerElement(line);
@@ -564,50 +590,67 @@ namespace TickGraphCore
 
 			decimal standardDeviation;
 			ITradeHistory tradeHistory;
+			IEnumerable<DataPoint> dataPoints;
 			if (dataDensity > INT_MinDataDensity - 3)
 			{
 				if (denseDataPoints == null || (chartTranslator.TradeHistory as IUpdatableTradeHistory)?.ChangedSinceLastDataDensityQuery == true)
 					denseDataPoints = chartTranslator.TradeHistory.GetDataPointsAcrossSegments(dataDensity, UseChangeSummaries);
 
-				DrawDataPoints(denseDataPoints);
+				dataPoints = denseDataPoints;
 				tradeHistory = chartTranslator.TradeHistory;
 			}
 			else
 			{
 				DataPointsSnapshot stockDataPointSnapshot = chartTranslator.TradeHistory.GetSnapshot();
-				DrawDataPoints(stockDataPointSnapshot.DataPoints);
+				dataPoints = stockDataPointSnapshot.DataPoints;
 
 				tradeHistory = stockDataPointSnapshot;
 			}
 
-			buySignals = tradeHistory.BuySignals.ToList();
 			averagePrice = tradeHistory.AveragePriceAtBuySignal;
 			if (averagePrice == 0)
 				averagePrice = tradeHistory.AveragePrice;
 
 			standardDeviation = tradeHistory.StandardDeviationAtBuySignal;
 
-			if (buySignals != null && buySignals.Count > 0)
-				DrawBuySignals(buySignals);
-
-			
-
 			if (standardDeviation == 0)
 				standardDeviation = tradeHistory.StandardDeviation;
 
 			DrawAveragePrice(tradeHistory, averagePrice, standardDeviation);
+			DrawPercentLines();
 
-			DrawHorizontalLine(averagePrice * 1.03m, Brushes.DarkRed, 0.6);
-			DrawHorizontalLine(averagePrice * 1.04m, Brushes.Green, 0.6);
-			DrawHorizontalLine(averagePrice * 1.05m, Brushes.Blue, 0.15);
-			DrawHorizontalLine(averagePrice * 1.06m, Brushes.Blue, 0.15);
-			DrawHorizontalLine(averagePrice * 1.07m, Brushes.Blue, 0.15);
+			DrawDataPoints(dataPoints);
+			DrawBuySignals(tradeHistory);
+			DrawSellSignals(tradeHistory);
 
 			AddCoreAdornments(lastMousePosition);
 
 			UpdateSelection();
 			DrawAnalysisCharts();
 			DrawCustomAdornments(customAdornments);
+		}
+
+		private void DrawPercentLines()
+		{
+			DrawPercentLine(averagePrice * 0.88m, Brushes.Blue, 0.15);
+			DrawPercentLine(averagePrice * 0.89m, Brushes.Blue, 0.15);
+			DrawPercentLine(averagePrice * 0.90m, Brushes.Blue, 0.15);
+			DrawPercentLine(averagePrice * 0.91m, Brushes.Blue, 0.15);
+			DrawPercentLine(averagePrice * 0.92m, Brushes.Blue, 0.15);
+			DrawPercentLine(averagePrice * 0.93m, Brushes.Blue, 0.15);
+			DrawPercentLine(averagePrice * 0.94m, Brushes.Blue, 0.15);
+			DrawPercentLine(averagePrice * 0.95m, Brushes.Blue, 0.15);
+			DrawPercentLine(averagePrice * 0.96m, Brushes.Blue, 0.15);
+			DrawPercentLine(averagePrice * 0.97m, Brushes.Blue, 0.15);
+			DrawPercentLine(averagePrice * 0.98m, Brushes.Blue, 0.15);
+			DrawPercentLine(averagePrice * 0.99m, Brushes.Blue, 0.15);
+			DrawPercentLine(averagePrice * 1.01m, Brushes.Blue, 0.15);
+			DrawPercentLine(averagePrice * 1.02m, Brushes.Blue, 0.15);
+			DrawPercentLine(averagePrice * 1.03m, Brushes.Blue, 0.15);
+			DrawPercentLine(averagePrice * 1.04m, Brushes.Blue, 0.15);
+			DrawPercentLine(averagePrice * 1.05m, Brushes.Blue, 0.15);
+			DrawPercentLine(averagePrice * 1.06m, Brushes.Blue, 0.15);
+			DrawPercentLine(averagePrice * 1.07m, Brushes.Blue, 0.15);
 		}
 
 		void DrawAveragePrice(ITradeHistory tradeHistory, decimal averagePrice, decimal standardDeviation)
@@ -641,13 +684,13 @@ namespace TickGraphCore
 			if (height < 0)
 				return;
 
-			Rectangle averagePrice = new Rectangle() { Width = width, Height = height, Fill = Brushes.Yellow, Stroke = Brushes.Orange, Opacity = opacityOverride, StrokeThickness = INT_AveragePriceThickness };
-			averagePrice.IsHitTestVisible = false;
+			Rectangle rectangle = new Rectangle() { Width = width, Height = height, Fill = Brushes.Yellow, Stroke = Brushes.Orange, Opacity = opacityOverride, StrokeThickness = INT_AveragePriceThickness };
+			rectangle.IsHitTestVisible = false;
 			cvsBackLayer.IsHitTestVisible = false;
 
-			Canvas.SetLeft(averagePrice, left);
-			Canvas.SetTop(averagePrice, y);
-			AddBackLayerElement(averagePrice);
+			Canvas.SetLeft(rectangle, left);
+			Canvas.SetTop(rectangle, y);
+			AddBackLayerElement(rectangle);
 		}
 
 		private double GetStockPositionX(DateTime time)
@@ -660,17 +703,24 @@ namespace TickGraphCore
 			return chartTranslator.GetStockPositionY(price, chartHeightPixels);
 		}
 
-		void DrawBuySignals(List<DataPoint> buySignals)
+		void DrawBuySignals(ITradeHistory tradeHistory)
 		{
-			if (buySignals == null)
+			if (tradeHistory == null || tradeHistory.BuySignals == null || tradeHistory.BuySignals.Count == 0)
 				return;
 
-			DataPoint dataPoint = buySignals.FirstOrDefault();
-			if (dataPoint != null)	{
-				double x = GetStockPositionX(dataPoint.Time);
-				double y = GetStockPositionY(dataPoint.Tick.LastTradePrice);
-				AddBuySignal(x, y, dataPoint);
+			DataPoint buySignal = tradeHistory.BuySignals.FirstOrDefault();
+			if (buySignal != null)
+			{
+				AddBuySignal(buySignal);
 			}
+		}
+
+		void DrawSellSignals(ITradeHistory tradeHistory)
+		{
+			if (tradeHistory == null || tradeHistory.SellSignals == null || tradeHistory.SellSignals.Count == 0)
+				return;
+
+			AddSellSignal(tradeHistory.SellSignals.FirstOrDefault());
 		}
 
 		private void DrawDataPoints(IEnumerable<DataPoint> stockDataPoints)
@@ -772,7 +822,7 @@ namespace TickGraphCore
 
 			foreach (UIElement uIElement in cvsMain.Children)
 			{
-				if (uIElement is Ellipse ellipse)
+				if (uIElement is Ellipse ellipse && ellipse.Tag is DataPoint)
 				{
 					double x = GetX(ellipse);
 					double y = GetY(ellipse);
@@ -1106,7 +1156,7 @@ namespace TickGraphCore
 			{
 				tbSymbolTitle.Text = "";
 			}
-
+			tbStatus.Text = "";
 			ClearDataDensityPoints();
 			DrawGraph();
 		}

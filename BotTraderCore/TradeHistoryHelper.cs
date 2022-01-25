@@ -60,6 +60,12 @@ namespace BotTraderCore
 			DataPoint last;
 			GetFirstLastLowHigh(pointsInRange, out first, out last, out low, out high);
 			DataPointsSnapshot dataPointsSnapshot = new DataPointsSnapshot(pointsInRange, first.Time, last.Time, low.Tick.LastTradePrice, high.Tick.LastTradePrice, null, null, tradeHistory.BuySignals, tradeHistory.SymbolPair, tradeHistory.QuoteCurrencyToUsdConversion, tradeHistory.AveragePriceAtBuySignal, tradeHistory.StandardDeviationAtBuySignal);
+
+			if (tradeHistory.SellSignals != null)
+				dataPointsSnapshot.SellSignals = new List<DataPoint>(tradeHistory.SellSignals);
+			else
+				dataPointsSnapshot.SellSignals = new List<DataPoint>();
+
 			return dataPointsSnapshot;
 		}
 	}

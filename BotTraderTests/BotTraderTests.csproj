@@ -39,16 +39,22 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Binance.Net, Version=7.2.6.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Binance.Net.7.2.7\lib\netstandard2.0\Binance.Net.dll</HintPath>
+    </Reference>
     <Reference Include="Bittrex.Net, Version=5.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Bittrex.Net.5.1.1\lib\netstandard2.0\Bittrex.Net.dll</HintPath>
     </Reference>
-    <Reference Include="CryptoExchange.Net, Version=3.9.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\CryptoExchange.Net.3.9.0\lib\netstandard2.0\CryptoExchange.Net.dll</HintPath>
+    <Reference Include="CryptoExchange.Net, Version=4.2.8.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\CryptoExchange.Net.4.2.8\lib\netstandard2.0\CryptoExchange.Net.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.AspNet.SignalR.Client, Version=2.4.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.AspNet.SignalR.Client.2.4.1\lib\net45\Microsoft.AspNet.SignalR.Client.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
+    <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=3.1.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Extensions.Logging.Abstractions.3.1.0\lib\netstandard2.0\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.VisualStudio.TestPlatform.TestFramework, Version=14.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\MSTest.TestFramework.2.1.1\lib\net45\Microsoft.VisualStudio.TestPlatform.TestFramework.dll</HintPath>
     </Reference>

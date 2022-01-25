@@ -1,203 +1,102 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{C3863417-341A-4C58-9AF7-A191F3DADFB8}</ProjectGuid>
+    <TargetFramework>net6.0-windows</TargetFramework>
     <OutputType>WinExe</OutputType>
     <RootNamespace>StockAnalysis</RootNamespace>
     <AssemblyName>StockAnalysis</AssemblyName>
-    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-    <ProjectTypeGuids>{60dc8134-eba5-43b8-bcc9-bb4bc16c2548};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
-    <WarningLevel>4</WarningLevel>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <Deterministic>true</Deterministic>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <UseWPF>true</UseWPF>
+    <ImportWindowsDesktopTargets>true</ImportWindowsDesktopTargets>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Bittrex.Net, Version=5.1.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\Bittrex.Net.5.1.1\lib\netstandard2.0\Bittrex.Net.dll</HintPath>
-    </Reference>
-    <Reference Include="CryptoExchange.Net, Version=3.9.0.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\CryptoExchange.Net.3.9.0\lib\netstandard2.0\CryptoExchange.Net.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.AspNet.SignalR.Client, Version=2.4.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <HintPath>packages\Microsoft.AspNet.SignalR.Client.2.4.1\lib\net45\Microsoft.AspNet.SignalR.Client.dll</HintPath>
-    </Reference>
-    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="SuperSocket.ClientEngine, Version=0.10.0.0, Culture=neutral, PublicKeyToken=ee9af13f57f00acc, processorArchitecture=MSIL">
-      <HintPath>packages\SuperSocket.ClientEngine.Core.0.10.0\lib\net45\SuperSocket.ClientEngine.dll</HintPath>
-    </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Collections.Specialized, Version=4.0.2.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Collections.Specialized.4.3.0\lib\net46\System.Collections.Specialized.dll</HintPath>
-      <Private>True</Private>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.ComponentModel.Composition" />
-    <Reference Include="System.Data" />
-    <Reference Include="System.IO, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.IO.4.3.0\lib\net462\System.IO.dll</HintPath>
-      <Private>True</Private>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Linq, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Linq.4.3.0\lib\net463\System.Linq.dll</HintPath>
-      <Private>True</Private>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Net.Http.WebRequest" />
-    <Reference Include="System.Net.NameResolution, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Net.NameResolution.4.3.0\lib\net46\System.Net.NameResolution.dll</HintPath>
-      <Private>True</Private>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Net.Security, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Net.Security.4.3.0\lib\net46\System.Net.Security.dll</HintPath>
-      <Private>True</Private>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Net.Sockets, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Net.Sockets.4.3.0\lib\net46\System.Net.Sockets.dll</HintPath>
-      <Private>True</Private>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Runtime, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Runtime.4.3.0\lib\net462\System.Runtime.dll</HintPath>
-      <Private>True</Private>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Runtime.Extensions, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Runtime.Extensions.4.3.0\lib\net462\System.Runtime.Extensions.dll</HintPath>
-      <Private>True</Private>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Runtime.InteropServices, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Runtime.InteropServices.4.3.0\lib\net463\System.Runtime.InteropServices.dll</HintPath>
-      <Private>True</Private>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Security.Cryptography.Algorithms, Version=4.2.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Security.Cryptography.Algorithms.4.3.0\lib\net463\System.Security.Cryptography.Algorithms.dll</HintPath>
-      <Private>True</Private>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Security.Cryptography.Encoding, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Security.Cryptography.Encoding.4.3.0\lib\net46\System.Security.Cryptography.Encoding.dll</HintPath>
-      <Private>True</Private>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Security.Cryptography.Primitives, Version=4.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Security.Cryptography.Primitives.4.3.0\lib\net46\System.Security.Cryptography.Primitives.dll</HintPath>
-      <Private>True</Private>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Security.Cryptography.X509Certificates, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Security.Cryptography.X509Certificates.4.3.0\lib\net461\System.Security.Cryptography.X509Certificates.dll</HintPath>
-      <Private>True</Private>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Text.RegularExpressions, Version=4.1.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
-      <HintPath>packages\System.Text.RegularExpressions.4.3.0\lib\net463\System.Text.RegularExpressions.dll</HintPath>
-      <Private>True</Private>
-      <Private>True</Private>
-    </Reference>
-    <Reference Include="System.Xml" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Xml.Linq" />
-    <Reference Include="System.Data.DataSetExtensions" />
-    <Reference Include="System.Net.Http" />
-    <Reference Include="System.Xaml">
-      <RequiredTargetFramework>4.0</RequiredTargetFramework>
-    </Reference>
-    <Reference Include="WebSocket4Net, Version=0.15.2.11, Culture=neutral, PublicKeyToken=eb4e154b696bf72a, processorArchitecture=MSIL">
-      <HintPath>packages\WebSocket4Net.0.15.2\lib\net45\WebSocket4Net.dll</HintPath>
-    </Reference>
-    <Reference Include="WindowsBase" />
-    <Reference Include="PresentationCore" />
-    <Reference Include="PresentationFramework" />
+    <ProjectReference Include="BotTraderCore\BotTraderCore.csproj" />
+    <ProjectReference Include="TestCaseGeneratorUI\TestCaseGeneratorUI.csproj" />
+    <ProjectReference Include="TickGraphCore\TickGraphCore.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <ApplicationDefinition Include="App.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </ApplicationDefinition>
-    <Page Include="MainWindow.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Compile Include="App.xaml.cs">
-      <DependentUpon>App.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="MainWindow.xaml.cs">
-      <DependentUpon>MainWindow.xaml</DependentUpon>
-      <SubType>Code</SubType>
-    </Compile>
+    <PackageReference Include="Bittrex.Net" Version="5.1.1" />
+    <PackageReference Include="System.Net.Http" Version="4.3.0" />
+    <PackageReference Include="Microsoft.DotNet.UpgradeAssistant.Extensions.Default.Analyzers" Version="0.3.261602">
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Properties\AssemblyInfo.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Properties\Resources.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTime>True</DesignTime>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-    <Compile Include="Properties\Settings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Settings.settings</DependentUpon>
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-    </Compile>
-    <EmbeddedResource Include="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-    <None Include="packages.config" />
-    <None Include="Properties\Settings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
-    </None>
+    <Compile Remove="BotTraderCore\AvailableTrades.cs" />
+    <Compile Remove="BotTraderCore\BinanceSymbolLookup.cs" />
+    <Compile Remove="BotTraderCore\ChangeSummary.cs" />
+    <Compile Remove="BotTraderCore\ChartTranslator.cs" />
+    <Compile Remove="BotTraderCore\CustomTick.cs" />
+    <Compile Remove="BotTraderCore\DataPoint.cs" />
+    <Compile Remove="BotTraderCore\DataPointsSnapshot.cs" />
+    <Compile Remove="BotTraderCore\ExchangeName.cs" />
+    <Compile Remove="BotTraderCore\Folders.cs" />
+    <Compile Remove="BotTraderCore\IPriceConverter.cs" />
+    <Compile Remove="BotTraderCore\ITradeHistory.cs" />
+    <Compile Remove="BotTraderCore\IUpdatableTradeHistory.cs" />
+    <Compile Remove="BotTraderCore\MyExtensions.cs" />
+    <Compile Remove="BotTraderCore\obj\Debug\.NETFramework,Version=v4.7.2.AssemblyAttributes.cs" />
+    <Compile Remove="BotTraderCore\PointXY.cs" />
+    <Compile Remove="BotTraderCore\PriceConverter.cs" />
+    <Compile Remove="BotTraderCore\Properties\AssemblyInfo.cs" />
+    <Compile Remove="BotTraderCore\RandomTickGenerator.cs" />
+    <Compile Remove="BotTraderCore\Signal.cs" />
+    <Compile Remove="BotTraderCore\TestData.cs" />
+    <Compile Remove="BotTraderCore\TickRange.cs" />
+    <Compile Remove="BotTraderCore\TradeHistory.cs" />
+    <Compile Remove="BotTraderCore\TradeHistoryHelper.cs" />
+    <Compile Remove="BotTraderTests\CustomTickTests.cs" />
+    <Compile Remove="BotTraderTests\GeneratedTests.cs" />
+    <Compile Remove="BotTraderTests\obj\Debug\.NETFramework,Version=v4.7.2.AssemblyAttributes.cs" />
+    <Compile Remove="BotTraderTests\Properties\AssemblyInfo.cs" />
+    <Compile Remove="BotTraderTests\UserDataFolders.cs" />
+    <Compile Remove="TestCaseGeneratorCore\obj\Debug\.NETFramework,Version=v4.7.2.AssemblyAttributes.cs" />
+    <Compile Remove="TestCaseGeneratorCore\Properties\AssemblyInfo.cs" />
+    <Compile Remove="TestCaseGeneratorCore\TestVariable.cs" />
+    <Compile Remove="TestCaseGeneratorCore\TestVariablePrice.cs" />
+    <Compile Remove="TestCaseGeneratorCore\TestVariableTime.cs" />
+    <Compile Remove="TestCaseGeneratorUI.backup\FrmTestGenerator.xaml.cs" />
+    <Compile Remove="TestCaseGeneratorUI.backup\obj\Debug\.NETFramework,Version=v4.7.2.AssemblyAttributes.cs" />
+    <Compile Remove="TestCaseGeneratorUI.backup\obj\Debug\FrmTestGenerator.g.cs" />
+    <Compile Remove="TestCaseGeneratorUI.backup\obj\Debug\FrmTestGenerator.g.i.cs" />
+    <Compile Remove="TestCaseGeneratorUI.backup\Properties\AssemblyInfo.cs" />
+    <Compile Remove="TestCaseGeneratorUI.backup\Properties\Resources.Designer.cs" />
+    <Compile Remove="TestCaseGeneratorUI.backup\Properties\Settings.Designer.cs" />
+    <Compile Remove="TestCaseGeneratorUI\FrmTestGenerator.xaml.cs" />
+    <Compile Remove="TestCaseGeneratorUI\obj\Debug\.NETFramework,Version=v4.7.2.AssemblyAttributes.cs" />
+    <Compile Remove="TestCaseGeneratorUI\obj\Debug\FrmTestGenerator.g.cs" />
+    <Compile Remove="TestCaseGeneratorUI\obj\Debug\FrmTestGenerator.g.i.cs" />
+    <Compile Remove="TestCaseGeneratorUI\obj\Debug\net472\.NETFramework,Version=v4.7.2.AssemblyAttributes.cs" />
+    <Compile Remove="TestCaseGeneratorUI\obj\Debug\net6.0-windows\.NETCoreApp,Version=v6.0.AssemblyAttributes.cs" />
+    <Compile Remove="TestCaseGeneratorUI\obj\Debug\net6.0-windows\FrmTestGenerator.g.cs" />
+    <Compile Remove="TestCaseGeneratorUI\obj\Debug\net6.0-windows\FrmTestGenerator.g.i.cs" />
+    <Compile Remove="TestCaseGeneratorUI\Properties\AssemblyInfo.cs" />
+    <Compile Remove="TestCaseGeneratorUI\Properties\Resources.Designer.cs" />
+    <Compile Remove="TestCaseGeneratorUI\Properties\Settings.Designer.cs" />
+    <Compile Remove="TickGraphCore\CustomAdornment.cs" />
+    <Compile Remove="TickGraphCore\DashedLineOption.cs" />
+    <Compile Remove="TickGraphCore\FrmZoom.xaml.cs" />
+    <Compile Remove="TickGraphCore\LabelAlignment.cs" />
+    <Compile Remove="TickGraphCore\obj\Debug\.NETFramework,Version=v4.7.2.AssemblyAttributes.cs" />
+    <Compile Remove="TickGraphCore\obj\Debug\FrmZoom.g.cs" />
+    <Compile Remove="TickGraphCore\obj\Debug\FrmZoom.g.i.cs" />
+    <Compile Remove="TickGraphCore\obj\Debug\GeneratedInternalTypeHelper.g.cs" />
+    <Compile Remove="TickGraphCore\obj\Debug\GeneratedInternalTypeHelper.g.i.cs" />
+    <Compile Remove="TickGraphCore\obj\Debug\TickGraph.g.cs" />
+    <Compile Remove="TickGraphCore\obj\Debug\TickGraph.g.i.cs" />
+    <Compile Remove="TickGraphCore\Properties\AssemblyInfo.cs" />
+    <Compile Remove="TickGraphCore\Properties\Resources.Designer.cs" />
+    <Compile Remove="TickGraphCore\Properties\Settings.Designer.cs" />
+    <Compile Remove="TickGraphCore\Selection.cs" />
+    <Compile Remove="TickGraphCore\SelectionModes.cs" />
+    <Compile Remove="TickGraphCore\TickGraph.xaml.cs" />
+    <EmbeddedResource Remove="TestCaseGeneratorUI.backup\Properties\Resources.resx" />
+    <EmbeddedResource Remove="TestCaseGeneratorUI\Properties\Resources.resx" />
+    <EmbeddedResource Remove="TickGraphCore\Properties\Resources.resx" />
+    <Page Remove="TestCaseGeneratorUI.backup\FrmTestGenerator.xaml" />
+    <Page Remove="TestCaseGeneratorUI.backup\Themes\Generic.xaml" />
+    <Page Remove="TestCaseGeneratorUI\FrmTestGenerator.xaml" />
+    <Page Remove="TestCaseGeneratorUI\Themes\Generic.xaml" />
+    <Page Remove="TickGraphCore\FrmZoom.xaml" />
+    <Page Remove="TickGraphCore\TickGraph.xaml" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="App.config" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="BotTraderCore\BotTraderCore.csproj">
-      <Project>{c258169e-7c6f-4e1a-bd39-34d8003722de}</Project>
-      <Name>BotTraderCore</Name>
-    </ProjectReference>
-    <ProjectReference Include="TestCaseGeneratorUI\TestCaseGeneratorUI.csproj">
-      <Project>{4f0144b5-8bf1-439d-a2ab-55b712b3a11c}</Project>
-      <Name>TestCaseGeneratorUI</Name>
-    </ProjectReference>
-    <ProjectReference Include="TickGraphCore\TickGraphCore.csproj">
-      <Project>{d9fe6e27-4c55-474e-aa78-7ac7f6168a46}</Project>
-      <Name>TickGraphCore</Name>
-    </ProjectReference>
-  </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

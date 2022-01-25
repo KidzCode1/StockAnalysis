@@ -56,14 +56,21 @@ namespace BotTraderCore
 
 		public static void SetClipboardText(string text)
 		{
-			Thread STAThread = new Thread(
-					delegate ()
-					{
-						Clipboard.SetText(text);
-					});
-			STAThread.SetApartmentState(ApartmentState.STA);
-			STAThread.Start();
-			STAThread.Join();
+			try
+			{
+				Thread STAThread = new Thread(
+						delegate ()
+						{
+							Clipboard.SetText(text);
+						});
+				STAThread.SetApartmentState(ApartmentState.STA);
+				STAThread.Start();
+				STAThread.Join();
+			}
+			catch (Exception ex)
+			{
+				// TODO: log this exception.
+			}
 		}
 
 		static void AddPairs()
@@ -1534,8 +1541,24 @@ namespace BotTraderCore
 			AddPair("API3BUSD", "API3-BUSD");
 			AddPair("API3USDT", "API3-USDT");
 			AddPair("BNBUST", "BNB-UST");
+			AddPair("BTTCUSDT", "BTTC-USDT");
+			AddPair("BTTCUSDC", "BTTC-USDC");
+			AddPair("BTTCTRY", "BTTC-TRY");
+			AddPair("ANCBTC", "ANC-BTC");
+			AddPair("ANCBUSD", "ANC-BUSD");
+			AddPair("ANCUSDT", "ANC-USDT");
+			AddPair("ACABTC", "ACA-BTC");
+			AddPair("ACABUSD", "ACA-BUSD");
+			AddPair("ACAUSDT", "ACA-USDT");
 			PrepareForAutoPairSplit();
 			ReportOnRightSideCounts();
+		}
+
+		static StringBuilder newPairs = new StringBuilder();
+
+		public static void SaveNewPairs()
+		{
+			System.IO.File.WriteAllText("D:\\Dropbox\\BotTrader\\NewPairs.txt", newPairs.ToString());
 		}
 
 		public static string GetDashedPair(string channelName)
@@ -1551,12 +1574,15 @@ namespace BotTraderCore
 						break;
 					}
 				}
-				
-				string code = $"AddPair(\"{channelName}\", \"{suggestedSplit}\");";
-				SetClipboardText(code);
 
-				System.Diagnostics.Debugger.Break();
-				AddPair("BNBUST", "BNB-UST");
+				AddPair(channelName, suggestedSplit);
+
+				string code = $"AddPair(\"{channelName}\", \"{suggestedSplit}\");";
+				newPairs.AppendLine(code);
+				//SetClipboardText(code);
+
+				//System.Diagnostics.Debugger.Break();
+				//AddPair("ACAUSDT", "ACA-USDT");
 			}
 			return channelNameToDashedPair[channelName];
 		}
