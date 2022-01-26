@@ -7,7 +7,9 @@ namespace BotTraderCore
 	public class AvailableTrades
 	{
 		public string Symbol { get; set; }
-		Dictionary<string, string> channelMap = new Dictionary<string, string>();
+
+		readonly Dictionary<string, string> channelMap = new Dictionary<string, string>();
+
 		public AvailableTrades(string symbol)
 		{
 			Symbol = symbol;
