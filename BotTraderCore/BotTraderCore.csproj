@@ -155,6 +155,7 @@
   <ItemGroup>
     <Compile Include="AvailableTrades.cs" />
     <Compile Include="BinanceSymbolLookup.cs" />
+    <Compile Include="BuyRecord.cs" />
     <Compile Include="Charting\ChartTranslator.cs" />
     <Compile Include="TradeHistory\DataPoints\CustomTick.cs" />
     <Compile Include="ExchangeName.cs" />
@@ -162,9 +163,6 @@
     <Compile Include="PriceConversion\IPriceConverter.cs" />
     <Compile Include="TradeHistory\ITradeHistory.cs" />
     <Compile Include="TradeHistory\IUpdatableTradeHistory.cs" />
-    <Compile Include="Logging\LogEntry.cs" />
-    <Compile Include="Logging\LogEntryKind.cs" />
-    <Compile Include="Logging\Log.cs" />
     <Compile Include="MyExtensions.cs" />
     <Compile Include="Charting\PointXY.cs" />
     <Compile Include="PriceConversion\PriceConverter.cs" />

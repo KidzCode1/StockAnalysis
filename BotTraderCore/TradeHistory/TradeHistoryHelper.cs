@@ -66,6 +66,8 @@ namespace BotTraderCore
 			else
 				dataPointsSnapshot.SellSignals = new List<DataPoint>();
 
+			dataPointsSnapshot.Traded = tradeHistory.Traded;
+
 			return dataPointsSnapshot;
 		}
 	}

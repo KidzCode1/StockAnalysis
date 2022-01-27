@@ -207,6 +207,7 @@ namespace BotTraderCore
 		public decimal StandardDeviationAtBuySignal { get; set; }
 
 		public bool NeedToSaveData { get => needToSaveData; }
+		public bool Traded { get; set; }
 
 		int updateCount;
 		bool changedDataPoints;
@@ -722,6 +723,8 @@ namespace BotTraderCore
 			if (SellSignals != null && SellSignals.Count > 0)
 				lastSnapShot.SellSignals = new List<DataPoint>(SellSignals);
 
+			lastSnapShot.Traded = Traded;
+
 			changedSinceLastSnapshot = false;
 
 			return lastSnapShot;
@@ -889,6 +892,14 @@ namespace BotTraderCore
 			saveFileName = fileName;
 			needToSaveData = true;
 			saveTime = DateTime.Now + timeSpan;
+		}
+
+		public void AddSellSignal(DataPointsSnapshot snapshot)
+		{
+			lock (dataLock)
+			{
+				SellSignals.Add(snapshot.LastDataPoint);
+			}
 		}
 
 		public void AddBuySignal(DataPointsSnapshot snapshot)
