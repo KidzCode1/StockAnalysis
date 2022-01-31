@@ -4,6 +4,9 @@ using System.Text;
 using System.Collections.Generic;
 using System.Windows;
 using System.Threading;
+using System.Diagnostics;
+using Binance.Net.Objects.Spot.SpotData;
+using Logging;
 
 namespace BotTraderCore
 {
@@ -1620,7 +1623,7 @@ namespace BotTraderCore
 			AddPair("USDTUSD", "USD-TUSD");
 			AddPair("BUSDUSD", "BUSD-USD");
 			AddPair("USDCUSD", "USDC-USD");
-
+			AddPair("BDOTDOT", "BDOT-DOT");
 			PrepareForAutoPairSplit();
 			ReportOnRightSideCounts();
 		}
@@ -1630,6 +1633,21 @@ namespace BotTraderCore
 		public static void SaveNewPairs()
 		{
 			System.IO.File.WriteAllText("D:\\Dropbox\\BotTrader\\NewPairs.txt", newPairs.ToString());
+		}
+
+		public static void GetSymbolAndQuoteCurrency(string channelName, out string symbol, out string quoteCurrency)
+		{
+			string dashedPair = GetDashedPair(channelName);
+			int indexOfDash = dashedPair.IndexOf("-");
+			if (indexOfDash <= 0)
+			{
+				Alert.Error($"Unable to determine symbol and quote currency from {channelName}!");
+				symbol = null;
+				quoteCurrency = null;
+				return;
+			}
+			quoteCurrency = dashedPair.Substring(indexOfDash + 1);
+			symbol = dashedPair.Substring(0, indexOfDash);
 		}
 
 		public static string GetDashedPair(string channelName)
@@ -1717,6 +1735,27 @@ namespace BotTraderCore
 		public static bool HasQuoteCurrency(string symbol)
 		{
 			return rightSideCounts.ContainsKey(symbol);
+		}
+
+		/// <summary>
+		/// Returns the Quote currency of a symbol pair
+		/// </summary>
+		/// <param name="symbolPair"></param>
+		/// <returns></returns>
+		public static string GetQuoteCurrency(string symbolPair)
+		{
+			int dashIndex = symbolPair.IndexOf("-");
+			if (dashIndex == -1)
+			{
+				symbolPair = GetDashedPair(symbolPair);
+				dashIndex = symbolPair.IndexOf("-");
+			}
+
+			if (dashIndex > 0)
+				return symbolPair.Substring(dashIndex + 1);
+
+			Debugger.Break();
+			return null;
 		}
 	}
 }

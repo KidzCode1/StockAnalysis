@@ -70,9 +70,10 @@ namespace BotTraderCore
 		List<DataPoint> SellSignals { get; set; }
 
 		/// <summary>
-		/// BuySignal event handlers can set this to true. If true, sell signal generators will scan the data in this trade history after any change, looking for sell signals.
+		/// BuySignal event handlers can set this to Bought. If set to Bought, sell signal generators will scan the data in this trade history after any change, looking for sell signals.
 		/// </summary>
-		bool Traded { get; set; }
+		BuySignalAction BuySignalAction { get; set; }
+
 
 		/// <summary>
 		/// The average price at the time the first buy signal arrived.

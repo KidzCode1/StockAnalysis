@@ -111,29 +111,16 @@ namespace BotTraderCore
 		{
 			if (string.IsNullOrWhiteSpace(SymbolPair))
 			{
+				Logging.Alert.Error("SymbolPair is null or empty.");
 				SetQuoteCurrencyToUsdConversion(1);
 				return;
 			}
 
-			int dashIndex = SymbolPair.IndexOf("-");
-			string quoteCurrencySymbol = null;
-			if (dashIndex == -1)
-			{
-				string dashedPair = BinanceSymbolLookup.GetDashedPair(SymbolPair);
-				dashIndex = dashedPair.IndexOf("-");
-				if (dashIndex > 0)
-					quoteCurrencySymbol = dashedPair.Substring(dashIndex + 1);
-				else
-				{
-					Debugger.Break();
-				}
-			}
-			else
-				quoteCurrencySymbol = SymbolPair.Substring(dashIndex + 1);
+			string quoteCurrencySymbol = BinanceSymbolLookup.GetQuoteCurrency(SymbolPair);
 
 			if (quoteCurrencySymbol == null)
 			{
-				Debugger.Break();
+				Logging.Alert.Error($"Unable to determine quote currency from symbol pair: \"{SymbolPair}\"");
 				return;
 			}
 
@@ -207,7 +194,8 @@ namespace BotTraderCore
 		public decimal StandardDeviationAtBuySignal { get; set; }
 
 		public bool NeedToSaveData { get => needToSaveData; }
-		public bool Traded { get; set; }
+
+		public BuySignalAction BuySignalAction { get; set; }
 
 		int updateCount;
 		bool changedDataPoints;
@@ -723,7 +711,7 @@ namespace BotTraderCore
 			if (SellSignals != null && SellSignals.Count > 0)
 				lastSnapShot.SellSignals = new List<DataPoint>(SellSignals);
 
-			lastSnapShot.Traded = Traded;
+			lastSnapShot.BuySignalAction = BuySignalAction;
 
 			changedSinceLastSnapshot = false;
 
@@ -959,6 +947,14 @@ namespace BotTraderCore
 			needToSaveData = false;
 
 			BuySignals.Clear();
+		}
+
+		public void Sold()
+		{
+			BuySignals = new List<DataPoint>();
+			SellSignals = new List<DataPoint>();
+			RemoveAgingDataPoints();
+			CalculateBounds();
 		}
 	}
 }

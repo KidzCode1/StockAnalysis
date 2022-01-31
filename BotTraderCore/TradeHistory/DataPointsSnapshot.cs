@@ -106,7 +106,7 @@ namespace BotTraderCore
 		public string SymbolPair { get; set; }
 		public decimal AveragePriceAtBuySignal { get; set; }
 		public decimal StandardDeviationAtBuySignal { get; set; }
-		public bool Traded { get; set; }
+		public BuySignalAction BuySignalAction { get; set; }
 
 		decimal average = decimal.MinValue;
 		decimal averageMinusTwo = decimal.MinValue;
