@@ -1624,6 +1624,14 @@ namespace BotTraderCore
 			AddPair("BUSDUSD", "BUSD-USD");
 			AddPair("USDCUSD", "USDC-USD");
 			AddPair("BDOTDOT", "BDOT-DOT");
+			AddPair("XNOBTC", "XNO-BTC");
+			AddPair("XNOBUSD", "XNO-BUSD");
+			AddPair("XNOUSDT", "XNO-USDT");
+			AddPair("ONETRY", "ONE-TRY");
+			AddPair("XNOETH", "XNO-ETH");
+			AddPair("MCBNB", "MC-BNB");
+			AddPair("COSTRY", "COS-TRY");
+			AddPair("KAVAETH", "KAVA-ETH");
 			PrepareForAutoPairSplit();
 			ReportOnRightSideCounts();
 		}
